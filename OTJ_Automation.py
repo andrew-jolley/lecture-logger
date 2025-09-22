@@ -63,7 +63,7 @@ def getInitNotes():     #function to get the init notes from the settings.txt
 
 def readCell(row,col): #reads cell with specific coordinate
     wb = load_workbook(path) #open file
-    sheet = wb.active #set active sheet
+    sheet = wb["OTJ log"] #set active sheet
     
     contents = (sheet.cell(row=row, column=col).value) #get all data from the row and col specified
     contents = str(contents) #convert data to string for processing
@@ -76,7 +76,7 @@ def readCell(row,col): #reads cell with specific coordinate
 
 def readRow(row):   #function to read a whole row
     wb = load_workbook(path)    #open file
-    sheet = wb.active
+    sheet = wb["OTJ log"]
     
     output = [] #define list to collate results
     
@@ -91,7 +91,7 @@ def readRow(row):   #function to read a whole row
     
 def readMultiRow(start,end,col):    #function to read a set of continuous rows between x-y in a specific column (e.g. a bunch of dates)
     wb = load_workbook(path)    #open workbook
-    sheet = wb.active   #set active sheet (1st)
+    sheet = wb["OTJ log"]   #set active sheet (1st)
     
     output = []     #define output list
     
@@ -118,7 +118,7 @@ def readDate(row):      #specific function to read a date from a specified row
 
 def find(term):     #function to return the cell ID of a search term (or list of) as a list, e.g. 142/3 or ['93/7', '94/7', '95/7', '96/7', '117/7', '118/7', '119/7', '119/8', '120/7', '124/7']
     wb = load_workbook(path)    #open workbook and set sheet
-    sheet = wb.active
+    sheet = wb["OTJ log"]
     
     output = []     #pre-define output list
     
@@ -135,7 +135,7 @@ def find(term):     #function to return the cell ID of a search term (or list of
 
 def findInCol(term,col,style):      #function to find a term in a column and return as either the raw text, or total instances of the term
     wb = load_workbook(path)    #open workbook and sheet
-    sheet = wb.active
+    sheet = wb["OTJ log"]
     
     output = []     #define output list
     total = 0       #define total variable
@@ -159,7 +159,7 @@ def findInCol(term,col,style):      #function to find a term in a column and ret
 
 def findInRow(term,row,style):      #find a term in a row
     wb = load_workbook(path)    #open workbook
-    sheet = wb.active
+    sheet = wb["OTJ log"]
     
     output = []     #define list and vars
     total = 0
@@ -193,15 +193,39 @@ def findFirstBlankRow():    #finds the first blank row in the .xlsx where the da
 
 ## WRITING TO EXCEL ##
 
-def writeCell(row,column,line): 
+def writeRow(row): 
+    global rowData
     wb = load_workbook(path)
-    sheet = wb.active
+    sheet = wb["OTJ log"]
     
-    c1 = sheet.cell(row = 1, column = 1)
+    for col, value in enumerate(rowData, start=1):  # start=1 means column A
+        sheet.cell(row=row, column=col, value=value)
     
-    c1.value = line
+    wb.save(path)
+    rowData = []    #reset row data list to avoid duplicate entries
     
-    wb.save(path())
+
+def addDate():
+    date = input("Enter date of activity (or enter 'today'):    ")
+    date = dateToUse.lower()
+    
+    if date == "today": 
+        date = (datetime.now()).strftime("%Y-%m-%d")
+    
+    rowData.append(date)
+
+    print(f"Got it, using '{date}'.")    
+    log(f"Added date:'{date}' to 'rowData' list",1)
+    
+    
+def addLocation():
+    location = input("Enter Location of activity:    ")
+    location = dateToUse.lower()
+    
+    rowData.append(location)
+
+    print(f"Got it, using '{location}'.")    
+    log(f"Added location:'{location}' to 'rowData' list",1)
 
 
 #
@@ -382,6 +406,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # Change working directory to that folder
 os.chdir(current_dir)
 
+rowData = []    #define for adding entries to instances of writing rows
+
 
 #
 #
@@ -398,9 +424,12 @@ path()  #gets the file path for the Excel file
 if path != "":  #if path exists
     print(getInitNotes())
     
-    print(find("Cisco"))
+    writeCell(148,3,"22/09/2025")
+    #print(readCell(148,3))
+    print(readDate(148))
+    
 
-
+writeRow()
 
 
 
