@@ -1,12 +1,12 @@
 def path():
-    global path
-    name = "FilePath.txt"
-    path = ""
+    global path     #global variable 'path' to be used in other functions for finding the file path
+    name = "FilePath.txt"   #set name of File Path config txt file
+    path = ""   #set path to blank string
     try: 
-        path = readTXT(name)[0].replace("\n","")
-    except Exception:
-        fatal(f"In function 'path()' - Cannot find '{name}'")
-    return path
+        path = readTXT(name)[0].replace("\n","")    #set path as the name specified in the txt file
+    except Exception:   #error handline
+        fatal(f"In function 'path()' - Cannot find '{name}'")   #this error is fatal, so fatal() is used
+    return path     #return path (will be blank due to path = "" if there is exception)
 
 
 def readTXT(name): #reads text files
@@ -16,33 +16,31 @@ def readTXT(name): #reads text files
     return contents #return the data
 
 
-def findSetting(name): 
+def findSetting(name):      #function to find a specified setting from settings.txt
     
-    file = "Backend Files (Hidden)/settings.txt"
+    file = "Backend Files (Hidden)/settings.txt"    #specify file
     
-    #print(f"Opening '{file}'")
+    contents = readTXT(file)    #get all data in the above file
+    name = f"{name}:"   #add a colon to the name specified when calling this function
     
-    contents = readTXT(file)
-    name = f"{name}:"
+    for i in range (len(contents)):     #loop for length of txt file
+        if (removeNewLines(contents[i])) == (removeNewLines(name)):     #if name of setting asked for is == the setting found during iteraton
+            line = i    #set the line number as i to specifiy the line the name of the setting is found on 
     
-    for i in range (len(contents)):
-        if (removeNewLines(contents[i])) == (removeNewLines(name)):
-            line = i
-    
-    output = (contents[line+1]).replace("\n","")
+    output = (contents[line+1]).replace("\n","")    #set output as the line of the setting name +1 (i.e. the setting option)
 
-    return output
+    return output   #return the output
 
 
 
     
     
-def getInitNotes():
-    received = findSetting("Init Notes")
+def getInitNotes():     #function to get the init notes from the settings.txt
+    received = findSetting("Init Notes")    #uses findSetting() to get the specified init notes
     
-    receivedSplit = received.replace("/","\n")
+    receivedSplit = received.replace("/","\n")      #replace '/' in the txt file with '\n' to format better in CLI
     
-    return receivedSplit
+    return receivedSplit    #return the notes
     
             
 def readCell(row,col): #reads cell with specific coordinate
@@ -71,7 +69,7 @@ def readCellKSB(row,col): #as above, but specific to KSB sheet
         return(contents)
 
 
-def readRow(row):
+def readRow(row):   #function to read a whole row
     wb = load_workbook(path)    #open file
     sheet = wb.active
     
@@ -86,98 +84,98 @@ def readRow(row):
     return output
     
     
-def readMultiRow(start,end,col):
-    wb = load_workbook(path)
-    sheet = wb.active
+def readMultiRow(start,end,col):    #function to read a set of continuous rows between x-y in a specific column (e.g. a bunch of dates)
+    wb = load_workbook(path)    #open workbook
+    sheet = wb.active   #set active sheet (1st)
     
-    output = []
+    output = []     #define output list
     
-    for i in range (start,end):
-        contents = (sheet.cell(row=i, column=col).value)
-        contents = str(contents)
+    for i in range (start,end):     #loop from start to end specified
+        contents = (sheet.cell(row=i, column=col).value)    #read the value of the row in the specific column
+        contents = str(contents)    #convert to str
     
-        if contents == "None":
+        if contents == "None":      #if contents are blank, return 'no data' string, else, add the contents to the output
             output.append(f"NO DATA IN CELL {col}/{i}")
         else:
             output.append(contents)
     
-    for i in range(len(output)):
-        print (output[i])
+    return output
     
 
-def readDate(row):
-    contents = readCell(row,3)
-    if "NO DATA" in contents:
+def readDate(row):      #specific function to read a date from a specified row
+    contents = readCell(row,3)      #uses readCell() to find the data
+    if "NO DATA" in contents:   #readCell returns a long string including 'NO DATA'. If present, return the contents as is. 
         return contents
-    else:
+    else:   #if there is data, then remove the time that Excel automatically adds to the cell
         contents = contents[:-9]
-    return contents
+    return contents     #return
 
 
-def find(term):
-    wb = load_workbook(path)
+def find(term):     #function to return the cell ID of a search term (or list of) as a list, e.g. 142/3 or ['93/7', '94/7', '95/7', '96/7', '117/7', '118/7', '119/7', '119/8', '120/7', '124/7']
+    wb = load_workbook(path)    #open workbook and set sheet
     sheet = wb.active
     
-    output = []
+    output = []     #pre-define output list
     
-    for iterateRows in range (18, 146):
-        for iterateCols in range(3, sheet.max_column):
-            contents = (sheet.cell(row=iterateRows, column=iterateCols).value)
-            contents = str(contents)
+     
+    for iterateRows in range (18, sheet.max_row):     #iterate through each row in the sheet
+        for iterateCols in range(3, sheet.max_column):      #for each row, iterate through each column
+            contents = (sheet.cell(row=iterateRows, column=iterateCols).value)      #read the cell value
+            contents = str(contents)    #convert to str
             
-            if term in contents: 
+            if term in contents:    #if the term can be found in the cell's contents, then add the Cell's location to the output list
                 output.append(f"{iterateRows}/{iterateCols}")
                 
-    return output if output else "Not Found"
+    return output if output else "Not Found"    #return output if it exists (i.e. the term could be found)
 
-def findInCol(term,col,style):
-    wb = load_workbook(path)
+def findInCol(term,col,style):      #function to find a term in a column and return as either the raw text, or total instances of the term
+    wb = load_workbook(path)    #open workbook and sheet
     sheet = wb.active
     
-    output = []
-    total = 0
+    output = []     #define output list
+    total = 0       #define total variable
     
-    for iterateRows in range (18, sheet.max_row):
-        contents = (sheet.cell(row=iterateRows, column=col).value)
-        contents = str(contents)
+    for iterateRows in range (18, sheet.max_row):       #iterate through all rows
+        contents = (sheet.cell(row=iterateRows, column=col).value)      #read the cell contents 
+        contents = str(contents)    #convert to str
         
-        if term in contents: 
+        if term in contents:        #if the term can be found in the cell's contents, then add the Cell's location to the output list
             output.append(f"{iterateRows}/{col}")
-            total += 1
+            total += 1      #used for style 2 (total instances). Increase total by 1
                 
-    if output and style == 1: 
+    if output and style == 1:   #return output list for style 1
         return output
-    elif output and style == 2: 
+    elif output and style == 2: #return total count for style 2
         return total
     else:
-        return "Not found"
+        return "Not found"  #if not found, return not found
     
     
 
-def findInRow(term,row,style):
-    wb = load_workbook(path)
+def findInRow(term,row,style):      #find a term in a row
+    wb = load_workbook(path)    #open workbook
     sheet = wb.active
     
-    output = []
+    output = []     #define list and vars
     total = 0
     
-    for iterateCols in range (3, sheet.max_column):
-        contents = (sheet.cell(row=row, column=iterateCols).value)
-        contents = str(contents)
+    for iterateCols in range (3, sheet.max_column):     #iterate through all valid columns
+        contents = (sheet.cell(row=row, column=iterateCols).value)      #get contents of cell
+        contents = str(contents)    #convert to str
         
-        if term in contents: 
-            output.append(f"{row}/{iterateCols}")
-            total += 1
+        if term in contents:    #if term is in the cell contents
+            output.append(f"{row}/{iterateCols}")   #add the cell location to the output
+            total += 1  #increase count by 1
                 
-    if output and style == 1: 
+    if output and style == 1:   #if using style 1 (list of cells), return output
         return output
-    elif output and style == 2: 
+    elif output and style == 2: #if using style 2 (total count of matches), return count
         return total
     else:
-        return "Not found"
+        return "Not found"  #else, return not found
     
     
-def findInRowKSB(term,style):
+def findInRowKSB(term,style):   #as above, but using sheet Broadcast & Media KSBs
     wb = load_workbook(path)
     sheet = wb["Broadcast & Media KSBs"]    
     
@@ -200,7 +198,7 @@ def findInRowKSB(term,style):
         return "Not found"
     
     
-def findInColKSB(term,col,style):
+def findInColKSB(term,col,style):       #as seen in findInCol(), but using the sheet with the KSBs defined
     wb = load_workbook(path)
     sheet = wb["Broadcast & Media KSBs"]    
     
@@ -291,7 +289,7 @@ def fatal(line):
     print("FATAL ERROR - PROGRAM FORCE QUIT IN 5 SECONDS - CONTACT LIAM - SEE LOGS")
     print("#########################################################################")
     time.sleep(5)
-   # quit()
+    quit()
         
         
 def wrtTXT(file,line):
@@ -331,7 +329,7 @@ def t():
 def removeNewLines(string):
     try: 
         output = string.replace("\n","")
-        return output1
+        return output
     except Exception:
         fatal("In removeNewLines() - Unable to replace '\n'")
         
@@ -351,9 +349,10 @@ log("","Start")   #adds a starting line to the log for the current instance
 path()
 
 if path != "":
-    print(getInitNotes())
+    #print(getInitNotes())
     
-    print(removeNewLines("This is a string with a new line \nbefore the before..."))
+    print(find("Cisco"))
+    input("Enter to quit")
 
 
 
