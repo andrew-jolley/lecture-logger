@@ -207,7 +207,7 @@ def writeRow(row):
 
 def addDate():
     date = input("Enter date of activity (or enter 'today'):    ")
-    date = dateToUse.lower()
+    date = date.lower()
     
     if date == "today": 
         date = (datetime.now()).strftime("%Y-%m-%d")
@@ -215,12 +215,12 @@ def addDate():
     rowData.append(date)
 
     print(f"Got it, using '{date}'.")    
-    log(f"Added date:'{date}' to 'rowData' list",1)
+    log(f"addDate() - Added date:'{date}' to 'rowData' list",1)
     
     
 def addLocation():
     location = input("Enter Location of activity:    ")
-    location = dateToUse.lower()
+    location = location.lower()
     
     rowData.append(location)
 
