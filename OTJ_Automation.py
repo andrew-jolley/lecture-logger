@@ -1,3 +1,24 @@
+# =============================================================================
+## OTJ_AUTOMATION BY LIAM SHADWELL
+## COPYTIGHT LIAM SHADWELL ;)
+# =============================================================================
+
+
+## TEXT FILE FUNCTIONS ##
+
+def wrtTXT(file,line):  #function to write txt to a requested txt file.
+    filename = open(file, 'a') #open file in append mode
+    filename.write(line) # write the specified line to the end of the file
+    filename.close() # close file 
+    
+    
+def readTXT(name): #reads text files
+    filename = open(name, 'r') #open file in read mode
+    contents = filename.readlines() # read all content from the file and store in var
+    filename.close() # close file
+    return contents #return the data
+
+
 def path():
     global path     #global variable 'path' to be used in other functions for finding the file path
     name = "FilePath.txt"   #set name of File Path config txt file
@@ -9,15 +30,7 @@ def path():
     return path     #return path (will be blank due to path = "" if there is exception)
 
 
-def readTXT(name): #reads text files
-    filename = open(name, 'r') #open file in read mode
-    contents = filename.readlines() # read all content from the file and store in var
-    filename.close() # close file
-    return contents #return the data
-
-
 def findSetting(name):      #function to find a specified setting from settings.txt
-    
     file = "Backend Files (Hidden)/settings.txt"    #specify file
     
     contents = readTXT(file)    #get all data in the above file
@@ -30,19 +43,24 @@ def findSetting(name):      #function to find a specified setting from settings.
     output = (contents[line+1]).replace("\n","")    #set output as the line of the setting name +1 (i.e. the setting option)
 
     return output   #return the output
-
-
-
     
-    
+
 def getInitNotes():     #function to get the init notes from the settings.txt
     received = findSetting("Init Notes")    #uses findSetting() to get the specified init notes
     
     receivedSplit = received.replace("/","\n")      #replace '/' in the txt file with '\n' to format better in CLI
     
     return receivedSplit    #return the notes
-    
-            
+
+#
+#
+#
+#
+#
+#
+
+## READ EXCEL FUNCTIONS ##
+
 def readCell(row,col): #reads cell with specific coordinate
     wb = load_workbook(path) #open file
     sheet = wb.active #set active sheet
@@ -51,19 +69,6 @@ def readCell(row,col): #reads cell with specific coordinate
     contents = str(contents) #convert data to string for processing
     
     if contents == "None": #return data if valid
-        return(f"NO DATA IN CELL {col}/{row}")
-    else:
-        return(contents)
-    
-    
-def readCellKSB(row,col): #as above, but specific to KSB sheet
-    wb = load_workbook(path)
-    sheet = wb["Broadcast & Media KSBs"]#KSB data sheet
-    
-    contents = (sheet.cell(row=row, column=col).value)
-    contents = str(contents)
-    
-    if contents == "None":
         return(f"NO DATA IN CELL {col}/{row}")
     else:
         return(contents)
@@ -174,6 +179,33 @@ def findInRow(term,row,style):      #find a term in a row
     else:
         return "Not found"  #else, return not found
     
+
+def findFirstBlankRow():    #finds the first blank row in the .xlsx where the data should be written. Note, this is the first row with no data, not the first with no formatting (thats ~2000). 
+    return (findInCol("None",3,1)[0][:-2])    #uses find in col, passed 'None' and asks for column 3 style 1, which returns the coordinates. 
+
+
+
+#
+#
+#
+#
+#
+#
+
+## READ EXCEL FOR KSBs ##
+
+def readCellKSB(row,col): #as above, but specific to KSB sheet
+    wb = load_workbook(path)
+    sheet = wb["Broadcast & Media KSBs"]#KSB data sheet
+    
+    contents = (sheet.cell(row=row, column=col).value)
+    contents = str(contents)
+    
+    if contents == "None":
+        return(f"NO DATA IN CELL {col}/{row}")
+    else:
+        return(contents)
+    
     
 def findInRowKSB(term,style):   #as above, but using sheet Broadcast & Media KSBs
     wb = load_workbook(path)
@@ -220,30 +252,25 @@ def findInColKSB(term,col,style):       #as seen in findInCol(), but using the s
     else:
         return "Not found"
     
-
-
-def findFirstBlankRow():    
-    return (findInCol("None",3)[0][:-2])
-
-
-def getKSB(module):
     
-    module = module.upper()
+def getKSB(module):  #gets KSBs given a module
     
-    printL(f"Getting KSBs for module {module} - please wait...")
+    module = module.upper()     #input validation
     
-    rowsWithX = []
+    print(f"Getting KSBs for module {module} - please wait...")    #waiting message
+    
+    rowsWithX = []      #init lists
     fullKSB = []
     
-    received = findInRowKSB(module,1)
+    received = findInRowKSB(module,1)   #find in KSB sheet header row the column which matches the required module code. 
     
-    column = (str(received[0]))
-    column = column.split("/")
-    column = int(column[1])
+    column = (str(received[0]))     #string
+    column = column.split("/")  #split by /
+    column = int(column[1])     #set the column number as int for later use. 
     
-    rowsWithXOutput = findInColKSB("x", column, 1)
+    rowsWithXOutput = findInColKSB("x", column, 1)  #check any rows in the column found above for 'x', denoting they are linked to the inputted module. 
 
-    for item in rowsWithXOutput:
+    for item in rowsWithXOutput:    
         parts = item.split("/")   # Split the string at '/'
         number_after_slash = parts[0]   # Take the part after the slash
         rowsWithX.append(number_after_slash)  # Add it to the new list
@@ -254,15 +281,37 @@ def getKSB(module):
     return str(",".join(fullKSB))
 
 
-def printL(line):
+#
+#
+#
+#
+#
+#
+    
+## MISC FUNCTIONS ## 
+
+def t():    #subroutine to easily print a test line
+    print("test")
+    
+    
+def removeNewLines(string):     #function to remove new lines where needed, instead of typing out '.replace(fubfj)
+    try:    #error handling
+        output = string.replace("\n","")    #take the inputted string, and remove the \n
+        return output
+    except Exception:   #if error, then file name exception could occur, requiring fatal error closure
+        fatal("In removeNewLines() - Unable to replace '\n'")
+        
+
+def printL(line):   #function to print and log the input
     print(line)
     log(line,1)
     
-def log(line,style):
+
+def log(line,style):    #function to log input with either info, error or fatal tags at the start. 
     
-    currentTime = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+    currentTime = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")    #get current time
     
-    if style == 1:
+    if style == 1:      #depending on the style, use wrtTXT() to write the output defined to the log.txt file in Backend Files. 
         output = "INFO    - {} - {}\n".format(currentTime,line)
         wrtTXT("Backend Files (Hidden)/log.txt",output)
     elif style == 2:
@@ -272,32 +321,25 @@ def log(line,style):
         output = "#FATAL# - {} - {}\n".format(currentTime,line)
         wrtTXT("Backend Files (Hidden)/log.txt",output)
     
-    elif style == "Start":
+    elif style == "Start":      #used to generate a program started message to clearly show a new instance. 
         output = "\n\n\nPROGRAM STARTED @ {}\n\n".format(currentTime)
         wrtTXT("Backend Files (Hidden)/log.txt",output)
     
-    else: 
+    else:   #if the log style cannot be defined, recur back through and send error message.  
         log(f"In function 'log()' - UNKNOWN LOG STYLE '{style}'",2)
         
         
-def fatal(line):
+def fatal(line):    #function to kill program if fatal error
+                    #call this function from other functions where a fatal error exception could occur
+    log(line,999)   #auto log fatal error
     
-    log(line,999)
-    
-    print("\n\n\n")
+    print("\n\n\n")     #print error into CLI
     print("#########################################################################")
     print("FATAL ERROR - PROGRAM FORCE QUIT IN 5 SECONDS - CONTACT LIAM - SEE LOGS")
     print("#########################################################################")
-    time.sleep(5)
-    quit()
+    time.sleep(5)   #wait 5 sec before closing program
+    quit()  #close program
         
-        
-def wrtTXT(file,line):
-        
-    filename = open(file, 'a') #open file in append mode
-    filename.write(line) # write the specified line to the end of the log
-    filename.close() # close file    
-    
 #
 #
 #
@@ -307,34 +349,19 @@ def wrtTXT(file,line):
 
 ## MISC OTHER ##
 
-import warnings
+import warnings    #import warnings to silence any data warnings from OpenPyXL in the running CLI
 warnings.simplefilter("ignore", UserWarning)
 
-from openpyxl import load_workbook
-from datetime import datetime
+from openpyxl import load_workbook   #import openpyxl
+from datetime import datetime    #these are pretty obvious
 import time
 import os
 
 # Get the directory of the current script
 current_dir = os.path.dirname(os.path.abspath(__file__))
-
 # Change working directory to that folder
 os.chdir(current_dir)
 
-
-
-def t():
-    print("test")
-    
-def removeNewLines(string):
-    try: 
-        output = string.replace("\n","")
-        return output
-    except Exception:
-        fatal("In removeNewLines() - Unable to replace '\n'")
-        
-    
-    
 
 #
 #
@@ -346,14 +373,12 @@ def removeNewLines(string):
 ## MAIN PROGRAM ##
 log("","Start")   #adds a starting line to the log for the current instance
 
-path()
+path()  #gets the file path for the Excel file
 
-if path != "":
-    #print(getInitNotes())
+if path != "":  #if path exists
+    print(getInitNotes())
     
     print(find("Cisco"))
-    input("Enter to quit")
-
 
 
 
