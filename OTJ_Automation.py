@@ -331,7 +331,7 @@ def t():
 def removeNewLines(string):
     try: 
         output = string.replace("\n","")
-        return output
+        return output1
     except Exception:
         fatal("In removeNewLines() - Unable to replace '\n'")
         
