@@ -6,6 +6,17 @@
 
 ## TEXT FILE FUNCTIONS ##
 
+def path():
+    global path     #global variable 'path' to be used in other functions for finding the file path
+    name = "FilePath.txt"   #set name of File Path config txt file
+    path = ""   #set path to blank string
+    try: 
+        path = readTXT(name)[0].replace("\n","")    #set path as the name specified in the txt file
+    except Exception:   #error handline
+        fatal(f"In function 'path()' - Cannot find '{name}'")   #this error is fatal, so fatal() is used
+    return path     #return path (will be blank due to path = "" if there is exception)
+
+
 def wrtTXT(file,line):  #function to write txt to a requested txt file.
     filename = open(file, 'a') #open file in append mode
     filename.write(line) # write the specified line to the end of the file
@@ -17,17 +28,6 @@ def readTXT(name): #reads text files
     contents = filename.readlines() # read all content from the file and store in var
     filename.close() # close file
     return contents #return the data
-
-
-def path():
-    global path     #global variable 'path' to be used in other functions for finding the file path
-    name = "FilePath.txt"   #set name of File Path config txt file
-    path = ""   #set path to blank string
-    try: 
-        path = readTXT(name)[0].replace("\n","")    #set path as the name specified in the txt file
-    except Exception:   #error handline
-        fatal(f"In function 'path()' - Cannot find '{name}'")   #this error is fatal, so fatal() is used
-    return path     #return path (will be blank due to path = "" if there is exception)
 
 
 def findSetting(name):      #function to find a specified setting from settings.txt
@@ -184,6 +184,25 @@ def findFirstBlankRow():    #finds the first blank row in the .xlsx where the da
     return (findInCol("None",3,1)[0][:-2])    #uses find in col, passed 'None' and asks for column 3 style 1, which returns the coordinates. 
 
 
+#
+#
+#
+#
+#
+#
+
+## WRITING TO EXCEL ##
+
+def writeCell(row,column,line): 
+    wb = load_workbook(path)
+    sheet = wb.active
+    
+    c1 = sheet.cell(row = 1, column = 1)
+    
+    c1.value = line
+    
+    wb.save(path())
+
 
 #
 #
@@ -191,6 +210,7 @@ def findFirstBlankRow():    #finds the first blank row in the .xlsx where the da
 #
 #
 #
+
 
 ## READ EXCEL FOR KSBs ##
 
