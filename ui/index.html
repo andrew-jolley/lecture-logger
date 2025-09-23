@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="ui-version" content="1.6.5">
+  <title>Lecture Logger</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa !important;
+      color: #212529 !important;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    
+    .card {
+      background-color: #ffffff !important;
+      border-color: #dee2e6 !important;
+      color: #212529 !important;
+    }
+    
+    .card-body {
+      color: #212529 !important;
+    }
+    
+    .form-control, .form-select {
+      background-color: #ffffff !important;
+      border-color: #ced4da !important;
+      color: #212529 !important;
+      user-select: text;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      background-color: #ffffff !important;
+      border-color: #86b7fe !important;
+      color: #212529 !important;
+      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+    }
+    
+    .form-control::placeholder {
+      color: #6c757d !important;
+    }
+    
+    .form-label {
+      color: #212529 !important;
+    }
+    
+    .modal-content {
+      background-color: #ffffff !important;
+      color: #212529 !important;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    
+    .modal-header {
+      border-bottom-color: #dee2e6 !important;
+    }
+    
+    .modal-footer {
+      border-top-color: #dee2e6 !important;
+    }
+    
+    .form-text {
+      color: #6c757d !important;
+    }
+    
+    .form-check-label {
+      color: #212529 !important;
+    }
+    
+    /* Readonly field styling */
+    .form-control[readonly] {
+      background-color: #f8f9fa !important;
+      color: #6c757d !important;
+    }
+    
+    /* Custom validation styles */
+    .form-control.is-invalid {
+      border-color: #dc3545 !important;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e") !important;
+      background-repeat: no-repeat !important;
+      background-position: right calc(0.375em + 0.1875rem) center !important;
+      background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
+    }
+    
+    .form-control.is-valid {
+      border-color: #198754 !important;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.94-.94 2.04 2.04L7.88 5.2a.75.75 0 1 1 1.06 1.06L4.66 10.54a.75.75 0 0 1-1.06 0L2.28 9.22a.75.75 0 0 1 0-1.06z'/%3e%3c/svg%3e") !important;
+      background-repeat: no-repeat !important;
+      background-position: right calc(0.375em + 0.1875rem) center !important;
+      background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
+    }
+    
+    /* Settings, info, and help button styling - always white background with dark text */
+    #devSettingsBtn, #infoBtn, #helpBtn {
+      background-color: white !important;
+      color: #495057 !important;
+      border-color: white !important;
+      border: 1px solid white !important;
+    }
+    
+    #devSettingsBtn:hover, #infoBtn:hover, #helpBtn:hover {
+      background-color: #f8f9fa !important;
+      color: #212529 !important;
+      border-color: #f8f9fa !important;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    #devSettingsBtn:active, #infoBtn:active, #helpBtn:active {
+      background-color: #e9ecef !important;
+      color: #212529 !important;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Subtle UI Update Notification -->
+  <div id="uiUpdateNotification" class="alert alert-info alert-dismissible fade" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 1050; max-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    <div class="d-flex align-items-center">
+      <div class="me-2">🎨</div>
+      <div class="flex-grow-1">
+        <strong>UI Updated!</strong><br>
+        <small class="text-muted">New interface is ready</small>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="refreshNowBtn">
+        🔄 Refresh Now
+      </button>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <!-- GitHub Gist Debug Modal (Development) -->
+  <div class="modal fade" id="gistDebugModal" tabindex="-1" aria-labelledby="gistDebugModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="gistDebugModalLabel">🐙 GitHub Raw File Debug</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <strong>Debug Information:</strong> This shows detailed information about GitHub raw file requests and responses.
+          </div>
+          
+          <div class="mb-3">
+            <h6 class="text-primary">📡 GitHub Raw File Requests</h6>
+            <div id="gistDebugContent" class="font-monospace small bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
+              Loading debug information...
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <h6 class="text-primary">🎯 Update Detection Logic</h6>
+            <div id="updateLogic" class="font-monospace small bg-light p-3 rounded">
+              <div>Current Version: <span id="currentVersionDebug"></span></div>
+              <div>Latest Version: <span id="latestVersionDebug"></span></div>
+              <div>Update Available: <span id="updateAvailableDebug"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="refreshGistData">🔄 Refresh Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UI Debug Modal (Development) -->
+  <div class="modal fade" id="uiDebugModal" tabindex="-1" aria-labelledby="uiDebugModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="uiDebugModalLabel">🎨 UI System Debug</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <strong>UI Debug Information:</strong> This shows detailed information about the UI OTA update system.
+          </div>
+          
+          <div class="mb-3">
+            <h6 class="text-primary">📡 UI Version Requests</h6>
+            <div id="uiDebugContent" class="font-monospace small bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
+              Loading UI debug information...
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <h6 class="text-primary">💾 Local Cache Status</h6>
+            <div id="uiCacheStatus" class="font-monospace small bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+              Checking cache status...
+            </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <h6 class="text-primary">🔧 Raw UI Data</h6>
+            <div id="uiRawData" class="font-monospace small bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+              No data yet...
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="refreshUIData">🔄 Refresh Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    body {
+      background-color: #f8f9fa !important;
+      color: #212529 !important;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    
+    .card {
+      background-color: #ffffff !important;
+      border-color: #dee2e6 !important;
+      color: #212529 !important;
+    }
+    
+    .card-body {
+      color: #212529 !important;
+    }
+    
+    .form-control, .form-select {
+      background-color: #ffffff !important;
+      border-color: #ced4da !important;
+      color: #212529 !important;
+      user-select: text;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      background-color: #ffffff !important;
+      border-color: #86b7fe !important;
+      color: #212529 !important;
+      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+    }
+    
+    .form-control::placeholder {
+      color: #6c757d !important;
+    }
+    
+    .form-label {
+      color: #212529 !important;
+    }
+    
+    .modal-content {
+      background-color: #ffffff !important;
+      color: #212529 !important;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    
+    .modal-header {
+      border-bottom-color: #dee2e6 !important;
+    }
+    
+    .modal-footer {
+      border-top-color: #dee2e6 !important;
+    }
+    
+    .form-text {
+      color: #6c757d !important;
+    }
+    
+    .form-check-label {
+      color: #212529 !important;
+    }
+    
+    /* Readonly field styling */
+    .form-control[readonly] {
+      background-color: #f8f9fa !important;
+      color: #6c757d !important;
+    }
+    
+    /* Custom validation styles */
+    .form-control.is-invalid {
+      border-color: #dc3545 !important;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e") !important;
+      background-repeat: no-repeat !important;
+      background-position: right calc(0.375em + 0.1875rem) center !important;
+      background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
+    }
+    
+    .form-control.is-valid {
+      border-color: #198754 !important;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.94-.94 2.04 2.04L7.88 5.2a.75.75 0 1 1 1.06 1.06L4.66 10.54a.75.75 0 0 1-1.06 0L2.28 9.22a.75.75 0 0 1 0-1.06z'/%3e%3c/svg%3e") !important;
+      background-repeat: no-repeat !important;
+      background-position: right calc(0.375em + 0.1875rem) center !important;
+      background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
+    }
+    
+    /* Settings, info, and help button styling - always white background with dark text */
+    #devSettingsBtn, #infoBtn, #helpBtn {
+      background-color: white !important;
+      color: #495057 !important;
+      border-color: white !important;
+      border: 1px solid white !important;
+    }
+    
+    #devSettingsBtn:hover, #infoBtn:hover, #helpBtn:hover {
+      background-color: #f8f9fa !important;
+      color: #212529 !important;
+      border-color: #f8f9fa !important;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    #devSettingsBtn:active, #infoBtn:active, #helpBtn:active {
+      background-color: #e9ecef !important;
+      color: #212529 !important;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Subtle UI Update Notification -->
+  <div id="uiUpdateNotification" class="alert alert-info alert-dismissible fade" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 1050; max-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    <div class="d-flex align-items-center">
+      <div class="me-2">🎨</div>
+      <div class="flex-grow-1">
+        <strong>UI Updated!</strong><br>
+        <small class="text-muted">New interface is ready</small>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="refreshNowBtn">
+        🔄 Refresh Now
+      </button>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <div class="container py-5">
+    <div class="card shadow-lg">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center" id="headerBar" style="user-select: none;">
+        <h3 class="mb-0">Lecture Logger</h3>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-light btn-sm" id="helpBtn" title="Get Help & Report Issues">❓</button>
+          <button type="button" class="btn btn-light btn-sm" id="infoBtn" title="About Lecture Logger">ℹ️</button>
+          <button type="button" class="btn btn-light btn-sm" id="devSettingsBtn" title="Settings">⚙️</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <form id="lecture-form" class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-control" id="date" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Location</label>
+            <select id="location" class="form-select" required>
+              <option value="">Select a location...</option>
+              <option>Millenium Point</option>
+              <option>Curzon</option>
+              <option>Parkside</option>
+              <option>SteamHouse</option>
+              <option>Online - BCU</option>
+              <option>Online - Home</option>
+              <option>BBC Wood Norton</option>
+              <option>Work Placement</option>
+              <option>N/A</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Type of Lecture</label>
+            <select id="type" class="form-select" required>
+              <option value="">Select a type...</option>
+              <option>Lecture</option>
+              <option>Annual Leave</option>
+              <option>Assignment Writing</option>
+              <option>Combination of activities</option>
+              <option>External Practice Exposure</option>
+              <option>Other</option>
+              <option>Placement</option>
+              <option>Protected Learning</option>
+              <option>Reading</option>
+              <option>Research</option>
+              <option>Revision</option>
+              <option>Seminar</option>
+              <option>Tutorial</option>
+              <option>Work shadowing</option>
+              <option>Independent Study</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Module Code</label>
+            <select id="module" class="form-select" required>
+              <option value="">Select a module...</option>
+              <option>N/A</option>
+              <option>DIG4143</option>
+              <option>CMP4286</option>
+              <option>ENG4098</option>
+              <option>ENG5139</option>
+              <option>CMP5346</option>
+              <option>CMP5347</option>
+              <option>CMP5345</option>
+              <option>CMP5348</option>
+              <option>DIG5130</option>
+              <option>DIG6204</option>
+              <option>CMP6195</option>
+              <option>DIG6209</option>
+              <option>DIG6202</option>
+              <option>DIG6203</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Knowledge, Skills & Behaviours</label>
+            <input type="text" class="form-control" id="knowledge" readonly style="background-color: #f8f9fa; color: #6c757d;" placeholder="Select a module to see KSBs">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Session Length (hrs)</label>
+            <input type="number" class="form-control" id="length" min="0" step="0.5" placeholder="e.g. 2.5" required>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label">Summary</label>
+            <input type="text" class="form-control" id="summary" placeholder="Write a brief overview of the lecture content here..." required>
+          </div>
+
+        <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" id="description" rows="3" placeholder="Give a more detailed description of what was covered, activities completed, and learning outcomes you achieved..." required></textarea>
+        </div>
+
+          <div class="col-md-6">
+            <label class="form-label">What’s Next</label>
+            <input type="text" class="form-control" id="next" placeholder="Write the next steps, follow-up actions, upcoming assignments required here...">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Completed <strong>within</strong> Working Hours?</label>
+            <select id="completed" class="form-select" required>
+              <option value="">Select...</option>
+              <option>Yes</option>
+              <option>No</option>
+            </select>
+          </div>
+
+          <div class="col-md-6" id="outsideWorkingHoursField" style="display: none;">
+            <label class="form-label">Completed <strong>outside</strong> of Working Hours?</label>
+            <select id="assessment" class="form-select">
+            <option>Yes</option>
+            <option>No</option>
+            </select>
+          </div>
+
+          <div class="col-12 d-flex justify-content-center gap-2" id="saveButtonContainer">
+            <button type="submit" class="btn btn-success" id="saveToExcelBtn">💾 Save Entry</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Release Notes Modal -->
+  <div class="modal fade" id="releaseNotesModal" tabindex="-1" aria-labelledby="releaseNotesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="releaseNotesModalLabel">🎉 What's New in Lecture Logger</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-center mb-3">
+            <h4 class="text-primary" id="releaseVersion">Version 2.0.0</h4>
+            <p class="text-muted">Latest Updates & Improvements</p>
+          </div>
+          <hr>
+          <div id="releaseNotesContent">
+            <!-- Release notes content will be dynamically loaded here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Initial Setup Modal -->
+  <div class="modal fade" id="initialSetupModal" tabindex="-1" aria-labelledby="initialSetupModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="initialSetupModalLabel">🚀 Welcome to Lecture Logger!</h5>
+        </div>
+        <div class="modal-body">
+          <div class="text-center mb-4">
+            <p class="text-muted">Let's get you set up with the basics to start logging your lectures.</p>
+          </div>
+          <form id="initial-setup-form">
+            <div class="mb-3">
+              <label for="initialExcelPath" class="form-label">Excel File Location</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="initialExcelPath" required 
+                       placeholder="Select your Excel (.xlsx) file...">
+                <button class="btn btn-outline-secondary" type="button" id="initialBrowseFileBtn">📁 Browse</button>
+                <input type="file" id="initialFileInput" accept=".xlsx" style="display: none;">
+              </div>
+              <div class="form-text">File path setting (Excel functionality disabled - for UI compatibility only)</div>
+              <div id="initialFilePathError" class="text-danger mt-1" style="display: none;"></div>
+            </div>
+            <div class="mb-3">
+              <label for="initialStartingRow" class="form-label">Starting Row Number</label>
+              <input type="number" class="form-control" id="initialStartingRow" required min="1" value="125">
+              <div class="form-text">Row setting (Excel functionality disabled - for UI compatibility only)</div>
+            </div>
+            
+            <!-- Update Settings Section -->
+            <div class="border-top pt-3 mt-4">
+              <h6 class="text-primary mb-3">🔄 Update Preferences</h6>
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="initialAutoUpdateCheck" checked>
+                  <label class="form-check-label" for="initialAutoUpdateCheck">
+                    <strong>Automatic Update Checking</strong>
+                  </label>
+                </div>
+                <div class="form-text">Check for app updates when starting Lecture Logger</div>
+              </div>
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="initialEnableOTA" checked>
+                  <label class="form-check-label" for="initialEnableOTA">
+                    <strong>Automatic UI Updates</strong>
+                  </label>
+                </div>
+                <div class="form-text">Allow interface improvements to download automatically</div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="saveInitialSetup">Get Started!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Verification Modal (after binary updates) -->
+  <div class="modal fade" id="settingsVerificationModal" tabindex="-1" aria-labelledby="settingsVerificationModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="settingsVerificationModalLabel">🔄 App Updated - Please Verify Settings</h5>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info" role="alert">
+            <div class="d-flex align-items-center">
+              <span class="me-2">🎉</span>
+              <div>
+                <strong>Lecture Logger has been updated!</strong><br>
+                <small>Please review and confirm your settings are still correct.</small>
+              </div>
+            </div>
+          </div>
+          
+          <form id="settings-verification-form">
+            <div class="mb-3">
+              <label for="verifyExcelPath" class="form-label">Excel File Location</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="verifyExcelPath" required 
+                       placeholder="Select your Excel (.xlsx) file...">
+                <button class="btn btn-outline-secondary" type="button" id="verifyBrowseFileBtn">📁 Browse</button>
+                <input type="file" id="verifyFileInput" accept=".xlsx" style="display: none;">
+              </div>
+              <div class="form-text">File path setting (Excel functionality disabled - for UI compatibility only)</div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="verifyStartingRow" class="form-label">Starting Row Number</label>
+              <input type="number" class="form-control" id="verifyStartingRow" required min="1" value="125">
+              <div class="form-text">Row setting (Excel functionality disabled - for UI compatibility only)</div>
+            </div>
+            
+            <!-- Update Settings Section -->
+            <div class="border-top pt-3 mt-4">
+              <h6 class="text-primary mb-3">🔄 Update Preferences</h6>
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="verifyAutoUpdateCheck" checked>
+                  <label class="form-check-label" for="verifyAutoUpdateCheck">
+                    <strong>Automatic Update Checking</strong>
+                  </label>
+                </div>
+                <div class="form-text">Check for app updates when starting Lecture Logger</div>
+              </div>
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="verifyEnableOTA" checked>
+                  <label class="form-check-label" for="verifyEnableOTA">
+                    <strong>Automatic UI Updates</strong>
+                  </label>
+                </div>
+                <div class="form-text">Allow interface improvements to download automatically</div>
+              </div>
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="verifyVerboseLogging">
+                  <label class="form-check-label" for="verifyVerboseLogging">
+                    <strong>Verbose Logging</strong>
+                  </label>
+                </div>
+                <div class="form-text">Enable detailed logging for troubleshooting</div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="confirmSettingsVerification">✅ Settings Look Good</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="settingsModalLabel">⚙️ Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="settings-form">
+            <div class="mb-3">
+              <label for="excelPath" class="form-label">Excel File Location</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="excelPath" required 
+                       placeholder="Select your Excel (.xlsx) file...">
+                <button class="btn btn-outline-secondary" type="button" id="browseFileBtn">📁 Browse</button>
+                <input type="file" id="fileInput" accept=".xlsx" style="display: none;">
+              </div>
+              <div class="form-text">File path setting (Excel functionality disabled - for UI compatibility only)</div>
+              <div id="filePathError" class="text-danger mt-1" style="display: none;"></div>
+            </div>
+            <div class="mb-3">
+              <label for="startingRow" class="form-label">Starting Row Number</label>
+              <input type="number" class="form-control" id="startingRow" required min="1" value="125">
+              <div class="form-text">Row setting (Excel functionality disabled - for UI compatibility only)</div>
+            </div>
+            <hr>
+            <div class="mb-3">
+              <label class="form-label">Logging Options</label>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="verboseLogging">
+                <label class="form-check-label" for="verboseLogging">
+                  📝 Enable Verbose Logging
+                </label>
+                <div class="form-text">When enabled, detailed logs are saved. When disabled, current log is archived with date.</div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Update Options</label>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="autoUpdateCheck">
+                <label class="form-check-label" for="autoUpdateCheck">
+                  🔄 Automatically Check for Updates
+                </label>
+                <div class="form-text">When enabled, the app will check for updates on startup and notify you of new versions.</div>
+              </div>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="enableOTAToggle">
+                <label class="form-check-label" for="enableOTAToggle">
+                  🎨 Enable OTA UI Updates
+                </label>
+                <div class="form-text">When disabled, the app will always use bundled UI files instead of downloading updates.</div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveSettings">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- About Us Modal -->
+  <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="aboutModalLabel">About Lecture Logger</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Content will be dynamically updated by JavaScript -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary me-2" id="checkUpdatesBtn">🔄 Check for Updates</button>
+          <button type="button" class="btn btn-outline-primary me-2" id="viewReleaseNotesBtn">📋 View Release Notes</button>
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update Available Modal -->
+  <div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="updateModalLabel">🎉 Update Available!</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-center mb-3">
+            <h4 id="newVersionNumber">Version X.X.X</h4>
+            <p class="text-muted">A new version of Lecture Logger is available!</p>
+          </div>
+          <hr>
+          <h6>📋 Release Notes:</h6>
+          <div id="updateReleaseNotes" class="mt-2">
+            <!-- Release notes will be populated here -->
+          </div>
+          
+          <!-- Progress container (hidden by default) -->
+          <div id="updateProgressContainer" class="mt-4" style="display: none;">
+            <hr>
+            <h6>📥 Downloading Update...</h6>
+            <div class="progress mb-2" style="height: 25px;">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                   id="updateProgressBar" 
+                   role="progressbar" 
+                   style="width: 0%;" 
+                   aria-valuenow="0" 
+                   aria-valuemin="0" 
+                   aria-valuemax="100">0%</div>
+            </div>
+            <small class="text-muted" id="updateProgressText">Preparing download...</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Maybe Later</button>
+          <button type="button" class="btn btn-primary" onclick="downloadUpdate()">Download Update</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GitHub Gist Debug Modal (Development) -->
+  <div class="modal fade" id="gistDebugModal" tabindex="-1" aria-labelledby="gistDebugModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="gistDebugModalLabel">🔍 GitHub Gist Debug Information</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <strong>📡 Current Version:</strong> <span id="debugCurrentVersion"></span><br>
+            <strong>🔗 Gist URL:</strong> <code id="debugGistUrl"></code>
+          </div>
+          
+          <h6>📥 Raw Gist Response:</h6>
+          <pre id="debugRawResponse" class="bg-light p-3 border rounded" style="max-height: 200px; overflow-y: auto; font-size: 0.8em;"></pre>
+          
+          <h6>🧠 Parsed Information:</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <strong>Latest Version:</strong> <span id="debugLatestVersion" class="badge bg-primary"></span><br>
+              <strong>Is Newer:</strong> <span id="debugIsNewer" class="badge"></span><br>
+              <strong>Download Links:</strong>
+              <ul class="mt-2">
+                <li><strong>macOS:</strong> <a id="debugMacLink" href="#" target="_blank" rel="noopener">View Link</a></li>
+                <li><strong>Windows:</strong> <a id="debugWinLink" href="#" target="_blank" rel="noopener">View Link</a></li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <strong>Release Notes:</strong>
+              <div id="debugReleaseNotes" class="border p-2 mt-2 bg-light rounded" style="max-height: 150px; overflow-y: auto; font-size: 0.9em;"></div>
+            </div>
+          </div>
+          
+          <div class="mt-3">
+            <small class="text-muted">This information is fetched from the GitHub Gist and parsed by the update checking system.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="refreshGistData">� Refresh Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Developer Tools Modal -->
+  <div class="modal fade" id="developerModal" tabindex="-1" aria-labelledby="developerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="developerModalLabel">🧪 Developer Tools</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          
+          <!-- Update Testing Section -->
+          <div class="mb-4">
+            <h6 class="text-primary border-bottom pb-2">📦 Update System Testing</h6>
+            <div class="mb-3">
+              <label for="devTestVersion" class="form-label">Test Version Override</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="devTestVersion" placeholder="e.g., 1.0.0" 
+                       title="Enter a fake older version to test the update system">
+                <button class="btn btn-outline-secondary" type="button" id="devClearTestVersion" title="Clear test version">Clear</button>
+              </div>
+              <div class="form-text">Enter an older version number to simulate an outdated app and test the update system.</div>
+            </div>
+            
+            <button type="button" class="btn btn-warning btn-sm" id="devTestUpdateCheck">
+              🔄 Test Update Check
+            </button>
+            <div class="form-text">Triggers update check using the test version above (if set) or current version.</div>
+          </div>
+          
+          <!-- GitHub Debug Section -->
+          <div class="mb-4">
+            <h6 class="text-primary border-bottom pb-2">🔍 GitHub Integration Debug</h6>
+            <button type="button" class="btn btn-info btn-sm" id="devGithubDebug">
+              🐛 Debug GitHub Integration
+            </button>
+            <div class="form-text">Opens detailed GitHub integration debug information.</div>
+          </div>
+          
+          <!-- System Information Section -->
+          <div class="mb-4">
+            <h6 class="text-primary border-bottom pb-2">💻 System Information</h6>
+            <div class="row">
+              <div class="col-sm-6">
+                <strong>App Version:</strong> <span id="devAppVersion"></span>
+              </div>
+              <div class="col-sm-6">
+                <strong>Build Number:</strong> <span id="devBuildNumber"></span>
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-sm-6">
+                <strong>Platform:</strong> <span id="devPlatform"></span>
+              </div>
+              <div class="col-sm-6">
+                <strong>User Agent:</strong> <span id="devUserAgent" style="font-size: 0.8em;"></span>
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-sm-6">
+                <strong>UI Version:</strong> <span id="devUIVersion" class="badge bg-info"></span>
+              </div>
+              <div class="col-sm-6">
+                <strong>Cache Status:</strong> <span id="devCacheStatus"></span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- UI Management Section -->
+          <div class="mb-4">
+            <h6 class="text-primary border-bottom pb-2">🎨 UI Management</h6>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <button type="button" class="btn btn-info btn-sm w-100" id="checkUIUpdatesBtn">
+                  🔄 Check Updates
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-warning btn-sm w-100" id="clearUICacheBtn">
+                  🗑️ Clear Cache
+                </button>
+              </div>
+            </div>
+            <div id="uiStatusDisplay" class="small text-muted mb-2"></div>
+            <div class="form-text">Manage Over-The-Air UI updates. Changes require app restart.</div>
+          </div>
+          
+
+          
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Preview Modal removed - Excel functionality disabled -->
+
+  <!-- Developer Access Modal -->
+  <div class="modal fade" id="developerAccessModal" tabindex="-1" aria-labelledby="developerAccessModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="developerAccessModalLabel">🔒 Developer Access</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-warning" role="alert">
+            <strong>⚠️ Warning:</strong> You are about to access developer tools. These features are intended for advanced users and developers only.
+          </div>
+          <p>Are you sure you want to continue?</p>
+          <div class="mb-3">
+            <label for="developerPassword" class="form-label">Developer Password:</label>
+            <input type="password" class="form-control" id="developerPassword" placeholder="Enter password">
+            <div class="form-text">Enter the developer password to access advanced features.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmDeveloperAccess">Access Developer Tools</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
