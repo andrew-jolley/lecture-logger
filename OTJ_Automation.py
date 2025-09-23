@@ -72,39 +72,6 @@ def readCell(row,col): #reads cell with specific coordinate
         return(f"NO DATA IN CELL {col}/{row}")
     else:
         return(contents)
-
-
-def readRow(row):   #function to read a whole row
-    wb = load_workbook(path)    #open file
-    sheet = wb["OTJ log"]
-    
-    output = [] #define list to collate results
-    
-    for iterateCols in range (1,sheet.max_column):  #for each column, read the cell
-        contents = (sheet.cell(row=row, column=iterateCols).value)
-        contents = str(contents)    #convert from NoneType to String for processing
-    
-        output.append(contents) #add contents to output list to be returned
-
-    return output
-    
-    
-def readMultiRow(start,end,col):    #function to read a set of continuous rows between x-y in a specific column (e.g. a bunch of dates)
-    wb = load_workbook(path)    #open workbook
-    sheet = wb["OTJ log"]   #set active sheet (1st)
-    
-    output = []     #define output list
-    
-    for i in range (start,end):     #loop from start to end specified
-        contents = (sheet.cell(row=i, column=col).value)    #read the value of the row in the specific column
-        contents = str(contents)    #convert to str
-    
-        if contents == "None":      #if contents are blank, return 'no data' string, else, add the contents to the output
-            output.append(f"NO DATA IN CELL {col}/{i}")
-        else:
-            output.append(contents)
-    
-    return output
     
 
 def readDate(row):      #specific function to read a date from a specified row
@@ -116,22 +83,6 @@ def readDate(row):      #specific function to read a date from a specified row
     return contents     #return
 
 
-def find(term):     #function to return the cell ID of a search term (or list of) as a list, e.g. 142/3 or ['93/7', '94/7', '95/7', '96/7', '117/7', '118/7', '119/7', '119/8', '120/7', '124/7']
-    wb = load_workbook(path)    #open workbook and set sheet
-    sheet = wb["OTJ log"]
-    
-    output = []     #pre-define output list
-    
-     
-    for iterateRows in range (18, sheet.max_row):     #iterate through each row in the sheet
-        for iterateCols in range(3, sheet.max_column):      #for each row, iterate through each column
-            contents = (sheet.cell(row=iterateRows, column=iterateCols).value)      #read the cell value
-            contents = str(contents)    #convert to str
-            
-            if term in contents:    #if the term can be found in the cell's contents, then add the Cell's location to the output list
-                output.append(f"{iterateRows}/{iterateCols}")
-                
-    return output if output else "Not Found"    #return output if it exists (i.e. the term could be found)
 
 def findInCol(term,col,style):      #function to find a term in a column and return as either the raw text, or total instances of the term
     wb = load_workbook(path)    #open workbook and sheet
@@ -155,33 +106,9 @@ def findInCol(term,col,style):      #function to find a term in a column and ret
     else:
         return "Not found"  #if not found, return not found
     
-    
-
-def findInRow(term,row,style):      #find a term in a row
-    wb = load_workbook(path)    #open workbook
-    sheet = wb["OTJ log"]
-    
-    output = []     #define list and vars
-    total = 0
-    
-    for iterateCols in range (3, sheet.max_column):     #iterate through all valid columns
-        contents = (sheet.cell(row=row, column=iterateCols).value)      #get contents of cell
-        contents = str(contents)    #convert to str
-        
-        if term in contents:    #if term is in the cell contents
-            output.append(f"{row}/{iterateCols}")   #add the cell location to the output
-            total += 1  #increase count by 1
-                
-    if output and style == 1:   #if using style 1 (list of cells), return output
-        return output
-    elif output and style == 2: #if using style 2 (total count of matches), return count
-        return total
-    else:
-        return "Not found"  #else, return not found
-    
 
 def findFirstBlankRow():    #finds the first blank row in the .xlsx where the data should be written. Note, this is the first row with no data, not the first with no formatting (thats ~2000). 
-    return (findInCol("None",3,1)[0][:-2])    #uses find in col, passed 'None' and asks for column 3 style 1, which returns the coordinates. 
+    return int((findInCol("None",3,1)[0][:-2]))    #uses find in col, passed 'None' and asks for column 3 style 1, which returns the coordinates. 
 
 
 #
@@ -193,39 +120,287 @@ def findFirstBlankRow():    #finds the first blank row in the .xlsx where the da
 
 ## WRITING TO EXCEL ##
 
-def writeRow(row): 
+def writeRow(): 
     global rowData
+    
+    print("Adding this data to the log. Please wait...")
+
     wb = load_workbook(path)
     sheet = wb["OTJ log"]
     
-    for col, value in enumerate(rowData, start=1):  # start=1 means column A
+    row = findFirstBlankRow()    
+    
+    for col, value in enumerate(rowData, start=3):  # start=1 means column A
         sheet.cell(row=row, column=col, value=value)
     
     wb.save(path)
     rowData = []    #reset row data list to avoid duplicate entries
     
+    print("This data has now been added to the log.")
+    log(f"writeRow() - Wrote rowData to {path}",1)
+    
 
 def addDate():
-    date = input("Enter date of activity (or enter 'today'):    ")
+    global date
+    
+    date = input("Enter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
     date = date.lower()
     
     if date == "today": 
-        date = (datetime.now()).strftime("%Y-%m-%d")
+        date = (datetime.now()).strftime("%d/%m/%Y")
     
     rowData.append(date)
 
     print(f"Got it, using '{date}'.")    
     log(f"addDate() - Added date:'{date}' to 'rowData' list",1)
+
+
+def addAcadYear():
+    try: 
+        split = date.split("/")
+        
+        year = int(split[2][-2:])
+        month = int(split[1])
+        
+        if month >= 9:
+            startYear = year
+        else: 
+            startYear -= 1
+            
+        endYear = startYear + 1
+        
+        rowData.append(f"{startYear}/{endYear}")
+        log(f"addAcadYear() - Added academic year {startYear}/{endYear} to rowData list.",1)
+        
+    
+    except ValueError as e:
+        print("INCORRECT VALUE TYPE")
+        fatal(f"addAcadYear() - Incorrect value type - {e}")
+        
+    except Exception as e:
+        fatal(f"addAcadYear() - Fatal error - {e}")
+
+        
+    
     
     
 def addLocation():
-    location = input("Enter Location of activity:    ")
-    location = location.lower()
+    try: 
+        selected = 0
+        print("\nPlease choose a location: \n")
+        
+        options = [
+            "Home",
+            "Curzon Building, BCU City Centre",
+            "Millenium Point, BCU City Centre",
+            "SteamHouse, BCU City Centre",
+            "BBC London Broadcasting House",
+            "BBC Salford MediaCityUK",
+            "BBC Cymru Wales",
+            "BBC Scotland, Pacific Quay",
+            "BBC Belfast Broadcasting House",
+            "BBC Wood Norton",
+            "BBC Bristol"
+            ]
+        
+        
+        for i in range (1,len(options)):
+            print(f"{i} - {options[i]}")
+            
+        selected = int(input("\nEnter the chosen location here >>     "))
+        
+        if selected > len(options)-1 or selected == 0: 
+            print("Sorry, that option is not valid. Please try again...\n")
+            addLocation()
+            
+        rowData.append(options[selected])
     
-    rowData.append(location)
+        print(f"Got it, using '{options[selected]}'.")    
+        log(f"addLocation() - Added Location:'{options[selected]}' to 'rowData' list",1)
+        
+    except ValueError as e:
+        print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
+        log(f"addLocation() - {e} - looping to start of function",2)
+        addLocation()
+        
+    except Exception as e:
+        fatal(f"addLocation() - Fatal error - {e}")
+    
+    
+def addType():
+    try:
+        print("\nPlease choose an activity type: \n")
+        
+        selected = 0
 
-    print(f"Got it, using '{location}'.")    
-    log(f"Added location:'{location}' to 'rowData' list",1)
+        options = [
+            "Annual Leave",
+            "Assignment Writing",
+            "Combination of activities",
+            "External Practice Exposure",
+            "Lecture",
+            "Other",
+            "Placement",
+            "Protected Learning",
+            "Reading",
+            "Research",
+            "Revision",
+            "Seminar",
+            "Tutorial",
+            "Work shadowing",
+            "Independent Study"
+        ]
+
+        for i in range (1,len(options)):
+            print(f"{i} - {options[i]}")
+            
+        selected = int(input("\nEnter the chosen location here >>     "))
+        
+        if selected > len(options)-1 or selected == 0: 
+            print("Sorry, that option is not valid. Please try again...\n")
+            addType()
+            
+        rowData.append(options[selected])
+    
+        print(f"Got it, using '{options[selected]}'.")    
+        log(f"addType() - Added Type:'{options[selected]}' to 'rowData' list",1)
+        
+    except ValueError as e:
+        print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
+        log(f"addType() - {e} - looping to start of function",2)
+        addType()
+        
+    except Exception as e:
+        fatal(f"addType() - Fatal error - {e}")
+   
+        
+def addModule():
+    try:
+        print("\nPlease choose a module code: \n")
+        
+        selected = 0
+
+        options = [
+            "Not applicable",
+            "DIG4142",
+            "CMP4267",
+            "ENG4099",
+            "CMP4286",
+            "DIG4143",
+            "ENG4098",
+            "ENG5139",
+            "CMP5346",
+            "CMP5347",
+            "CMP5345",
+            "CMP5348",
+            "DIG5130",
+            "DIG6204",
+            "CMP6195",
+            "DIG6209",
+            "DIG6202",
+            "DIG6203"
+        ]
+
+        for i in range (1,len(options)):
+            print(f"{i} - {options[i]}")
+            
+        selected = int(input("\nEnter the chosen module here >>     "))
+        
+        if selected > len(options)-1 or selected == 0: 
+            print("Sorry, that option is not valid. Please try again...\n")
+            addType()
+            
+        rowData.append(options[selected])
+    
+        print(f"Got it, using '{options[selected]}'.")    
+        log(f"addModule() - Added Module: {options[selected]}' to 'rowData' list",1)
+        
+    except ValueError as e:
+        print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
+        log(f"addModule() - {e} - looping to start of function",2)
+        addType()
+        
+    except Exception as e:
+        fatal(f"addModule() - Fatal error - {e}")
+        
+        
+def addDescription():
+    try:    
+        line = ""
+        line = input("\nEnter a breif overview of what you did in this session....\n\n")
+        
+        if line != "":
+            rowData.append(line)
+            print("\n\nCool, we'll add that to the OTJ log.")
+            log("addDescription - Added description to rowData list.")
+        else:
+            print("\n\nSorry, that's invalid...")
+            log(f"addDescription() - Invalid input '{line}'")
+            addDescription()
+            
+    except Exception as e:
+        fatal(f"addDescription() - Fatal error - {e}")
+
+
+def addDetails():
+    try:
+        line = input("\nEnter more details about what you did in this session....\n\n")
+        
+        if line != "":
+            rowData.append(line)
+            print("\n\nCool, we'll add that to the OTJ log.")
+        else:
+            print("\n\nSorry, this is a required field...")
+            log(f"addDetails() - Invalid input - '{line}'")
+            addDetails()    
+            
+    except Exception as e:
+        fatal(f"addDetails() - Fatal error - {e}")
+        
+        
+def addKSB():    
+    try: 
+        if rowData[4] != "Not applicable":
+            KSB = getKSB(rowData[4])
+            print("KSBs received")
+            rowData.append(KSB)
+    except Exception as e:
+        fatal(f"addKSB() - Unable to get KSBs for module code provided - {e}")
+        
+        
+def addNextSteps():
+    line = input("\nEnter any next steps if applicable....\n\n")
+    
+    rowData.append(line)
+    
+    if line =="":
+        print("No worries, we won't add anything\n")
+    else: 
+        print("Cool, we'll add that to the OTJ log.")
+    
+
+def addDuration():   
+    try: 
+        hours = int(input("Enter the hours spent during this session (e.g. 2.5)...     "))
+    
+        if hours <= 0 or hours >= 50:
+            print("Sorry, that's not valid. The input must be between 0 and 50 hours. Try again\n")
+            addDuration()
+            
+        rowData.append(hours)
+            
+    except ValueError as e:
+        print("INCORRECT VALUE TYPE ENTERED\nTry again\n\n")
+        log(f"addDuration() - ValueError - {e}")
+        addDuration()
+        
+    except Exception as e:
+        fatal(f"addDuration() - Fatal error - {e}")
+        
+        
+    
+   
+    
 
 
 #
@@ -301,7 +476,7 @@ def getKSB(module):  #gets KSBs given a module
     
     module = module.upper()     #input validation
     
-    print(f"Getting KSBs for module {module} - please wait...")    #waiting message
+    print(f"\nGetting KSBs for module {module} - please wait...")    #waiting message
     
     rowsWithX = []      #init lists
     fullKSB = []
@@ -382,7 +557,7 @@ def fatal(line):    #function to kill program if fatal error
     print("FATAL ERROR - PROGRAM FORCE QUIT IN 5 SECONDS - CONTACT LIAM - SEE LOGS")
     print("#########################################################################")
     time.sleep(5)   #wait 5 sec before closing program
-    quit()  #close program
+    os._exit(1)  #close program
         
 #
 #
@@ -424,12 +599,24 @@ path()  #gets the file path for the Excel file
 if path != "":  #if path exists
     print(getInitNotes())
     
-    writeCell(148,3,"22/09/2025")
-    #print(readCell(148,3))
-    print(readDate(148))
+# =============================================================================
+#     writeCell(148,3,"22/09/2025")
+#     #print(readCell(148,3))
+#     print(readDate(148))
+# =============================================================================
+    addDate()
+    addAcadYear()
+    addLocation()
+    addType()
+    addModule()
+    addDescription()
+    addDetails()
+    addKSB()
+    addNextSteps()
+    addDuration()
     
-
-writeRow()
+    writeRow()
+    
 
 
 
