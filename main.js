@@ -395,6 +395,17 @@ ipcMain.handle('open-downloads-and-close', async () => {
   return true;
 });
 
+// IPC handler to open installer file directly
+ipcMain.handle('open-installer', async (event, filePath) => {
+  try {
+    await shell.openPath(filePath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error opening installer:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // IPC handler to restart the app (for UI updates)
 ipcMain.handle('restart-app', async () => {
   // Relaunch the app and exit current instance

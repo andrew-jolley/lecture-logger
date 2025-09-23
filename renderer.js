@@ -1,7 +1,7 @@
 // ===== UI VERSION IDENTIFIER =====
 // This constant identifies the version of this UI file
 // It should be updated whenever this file is modified for OTA updates
-const THIS_UI_VERSION = '1.6.6';
+const THIS_UI_VERSION = '1.6.7';
 // ===================================
 
 // Excel functionality removed - keeping for UI compatibility
@@ -869,23 +869,26 @@ ipcRenderer.on('update-download-complete', (event, data) => {
     downloadButton.disabled = false;
     closeButton.disabled = false;
     maybeButton.disabled = false;
-    downloadButton.textContent = 'Open Folder & Close App';
+    
+    // Determine platform-specific button text
+    const isMac = process.platform === 'darwin';
+    const buttonText = isMac ? 'Open Installer (DMG)' : 'Open Installer (EXE)';
+    downloadButton.textContent = buttonText;
     downloadButton.classList.remove('btn-primary');
     downloadButton.classList.add('btn-success');
     
-    // Update click handler to open Downloads folder and close app
+    // Update click handler to open installer directly
     downloadButton.onclick = async () => {
-      await ipcRenderer.invoke('open-downloads-and-close');
+      const result = await ipcRenderer.invoke('open-installer', data.filePath);
+      if (result.success) {
+        showSuccessAlert('Installer opened!', 'Please follow the installation instructions.');
+      } else {
+        showErrorAlert('Failed to open installer', result.error);
+      }
     };
   }
   
-  // Auto-close modal after 3 seconds
-  setTimeout(() => {
-    const updateModal = bootstrap.Modal.getInstance(document.getElementById('updateModal'));
-    if (updateModal) {
-      updateModal.hide();
-    }
-  }, 3000);
+  // Remove auto-close modal - let user manually close it
 });
 
 ipcRenderer.on('update-download-error', (event, data) => {

@@ -1,8 +1,8 @@
 {
   "name": "lecture-logger",
   "version": "2.5.7",
-  "buildNumber": "20250923.112",
-  "uiVersion": "1.6.6",
+  "buildNumber": "20250923.113",
+  "uiVersion": "1.6.7",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley",
   "main": "main.js",
@@ -13,7 +13,7 @@
     "dist:mac": "npm run clean && electron-builder --mac --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
     "dist:win": "npm run clean && electron-builder --win --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
     "dist:linux": "npm run clean && electron-builder --linux --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
-    "move-installers": "mkdir -p '/Users/andrewjolley/Setup Files' && find dist/ -name '*.dmg' -exec mv {} '/Users/andrewjolley/Setup Files/' \\; && find dist/ -name '*Setup*.exe' -exec mv {} '/Users/andrewjolley/Setup Files/' \\; && find dist/ -name '*.AppImage' -exec mv {} '/Users/andrewjolley/Setup Files/' \\;"
+    "move-installers": "mkdir -p '/Users/andrewjolley/Setup Files/v$npm_package_version' && find dist/ -name '*.dmg' -exec mv {} '/Users/andrewjolley/Setup Files/v$npm_package_version/' \\; && find dist/ -name '*Setup*.exe' -exec mv {} '/Users/andrewjolley/Setup Files/v$npm_package_version/' \\; && find dist/ -name '*.AppImage' -exec mv {} '/Users/andrewjolley/Setup Files/v$npm_package_version/' \\;"
   },
   "dependencies": {
     "exceljs": "^4.4.0"
