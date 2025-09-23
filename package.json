@@ -1,0 +1,75 @@
+{
+  "name": "lecture-logger",
+  "version": "2.5.5",
+  "buildNumber": "20250923.111",
+  "uiVersion": "1.6.5",
+  "description": "An app to log lectures into an Excel spreadsheet",
+  "author": "Andrew Jolley",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "clean": "rm -rf dist/",
+    "dist": "npm run clean && electron-builder -mw --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
+    "dist:mac": "npm run clean && electron-builder --mac --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
+    "dist:win": "npm run clean && electron-builder --win --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
+    "dist:linux": "npm run clean && electron-builder --linux --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
+    "move-installers": "mkdir -p '/Users/andrewjolley/Setup Files' && find dist/ -name '*.dmg' -exec mv {} '/Users/andrewjolley/Setup Files/' \\; && find dist/ -name '*Setup*.exe' -exec mv {} '/Users/andrewjolley/Setup Files/' \\; && find dist/ -name '*.AppImage' -exec mv {} '/Users/andrewjolley/Setup Files/' \\;"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.andrewjolley.lecturelogger",
+    "productName": "Lecture Logger",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "renderer.js",
+      "package.json"
+    ],
+    "extraFiles": [],
+    "compression": "maximum",
+    "removePackageScripts": true,
+    "removePackageKeywords": true,
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ],
+      "compression": "maximum"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "compression": "maximum"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
+      "compression": "maximum"
+    }
+  }
+}
