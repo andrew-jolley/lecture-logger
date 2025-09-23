@@ -216,12 +216,31 @@ function showErrorAlert(message, details = '') {
 const defaultFilePath = path.join(os.homedir(), 'Documents', 'OTJ log v4 Broadcast _ Media Systems Engineer.xlsx');
 
 // Update checking constants
-const UPDATE_CHECK_URL = 'https://raw.githubusercontent.com/andrew-jolley/websites/refs/heads/main/version.txt';
+const UPDATE_CHECK_URL = 'https://raw.githubusercontent.com/andrew-jolley/lecture-logger/refs/heads/main/version.txt';
 
 // UI OTA Update system
-const UI_VERSION_URL = 'https://raw.githubusercontent.com/andrew-jolley/websites/refs/heads/main/ui-version.txt';
-const UI_FILES_BASE_URL = 'https://raw.githubusercontent.com/andrew-jolley/websites/refs/heads/main/ui/';
+const UI_VERSION_URL = 'https://raw.githubusercontent.com/andrew-jolley/lecture-logger/refs/heads/main/ui-version.txt';
+const UI_FILES_BASE_URL = 'https://raw.githubusercontent.com/andrew-jolley/lecture-logger/refs/heads/main/ui/';
 let LOCAL_UI_CACHE_DIR = null; // Will be set via IPC at startup
+
+// Binary version tracking for first launch detection
+const BINARY_VERSION_FILE = path.join(os.homedir(), 'Documents', '.lecture-logger-version');
+let isFirstLaunchOfBinary = false; // Will be determined at startup
+
+// OTA status tracking for developer tools
+let otaStatus = {
+  state: 'idle', // 'idle', 'checking', 'downloading', 'ready', 'installed', 'failed'
+  message: 'No OTA activity',
+  version: null,
+  error: null
+};
+
+// Temporary storage for pending OTA files (not yet committed to cache)
+let pendingOTAFiles = {
+  version: null,
+  files: null, // Will store the downloaded file contents
+  validated: false
+};
 
 // Initialize cache directory at startup
 async function initializeCacheDir() {
@@ -229,6 +248,52 @@ async function initializeCacheDir() {
     LOCAL_UI_CACHE_DIR = await ipcRenderer.invoke('get-cache-dir');
   }
   return LOCAL_UI_CACHE_DIR;
+}
+
+// Check if this is the first launch of a new binary version
+function checkBinaryVersionFirstLaunch() {
+  try {
+    const currentBinaryVersion = packageJson.version;
+    let lastSeenVersion = null;
+    
+    // Read last seen binary version
+    if (fs.existsSync(BINARY_VERSION_FILE)) {
+      lastSeenVersion = fs.readFileSync(BINARY_VERSION_FILE, 'utf8').trim();
+    }
+    
+    // Determine if this is first launch of new binary
+    isFirstLaunchOfBinary = !lastSeenVersion || lastSeenVersion !== currentBinaryVersion;
+    
+    if (isFirstLaunchOfBinary) {
+      console.log(`First launch of binary version ${currentBinaryVersion} (previous: ${lastSeenVersion || 'none'})`);
+      
+      // Handle cache based on OTA setting
+      if (appSettings.enableOTA) {
+        // Empty cache directory but keep it
+        if (LOCAL_UI_CACHE_DIR && fs.existsSync(LOCAL_UI_CACHE_DIR)) {
+          console.log('Emptying UI cache directory for new binary version...');
+          const files = fs.readdirSync(LOCAL_UI_CACHE_DIR);
+          for (const file of files) {
+            fs.unlinkSync(path.join(LOCAL_UI_CACHE_DIR, file));
+          }
+        }
+      } else {
+        // Delete entire cache directory
+        if (LOCAL_UI_CACHE_DIR && fs.existsSync(LOCAL_UI_CACHE_DIR)) {
+          console.log('Deleting UI cache directory (OTA disabled)...');
+          fs.rmSync(LOCAL_UI_CACHE_DIR, { recursive: true, force: true });
+        }
+      }
+      
+      // Update the stored binary version
+      fs.writeFileSync(BINARY_VERSION_FILE, currentBinaryVersion, 'utf8');
+    }
+    
+    return isFirstLaunchOfBinary;
+  } catch (error) {
+    console.error('Error checking binary version first launch:', error);
+    return false;
+  }
 }
 
 // Delete UI cache directory
@@ -363,13 +428,20 @@ async function checkUIVersion() {
     // In development mode or if OTA is disabled, skip OTA updates and use bundled files
     if (process.env.NODE_ENV === 'development') {
       logBasic('info', 'Development mode detected - skipping UI OTA check');
+      otaStatus.state = 'idle';
+      otaStatus.message = 'Development mode - OTA disabled';
       return;
     }
     
     if (!appSettings.enableOTA) {
       logBasic('info', 'OTA updates disabled in settings - using bundled UI files');
+      otaStatus.state = 'idle';
+      otaStatus.message = 'OTA disabled in settings';
       return;
     }
+    
+    otaStatus.state = 'checking';
+    otaStatus.message = 'Checking for UI updates...';
     
     logVerbose('info', 'Checking for UI updates');
     
@@ -400,27 +472,57 @@ async function checkUIVersion() {
       });
       
       try {
+        // Download and validate files - only show notification if validation passes
         await downloadUIFiles(latestUIVersion);
+        
+        // Validation passed - OTA is ready
+        otaStatus.state = 'ready';
+        otaStatus.message = `UI version ${latestUIVersion} validated and ready`;
+        
         return { updated: true, version: latestUIVersion };
       } catch (downloadError) {
-        logBasic('warn', 'UI files download failed', { error: downloadError.message });
+        logBasic('warn', 'UI files download/validation failed', { error: downloadError.message });
+        
+        // Don't show user notification for validation failures
+        otaStatus.state = 'failed';
+        otaStatus.message = downloadError.message;
+        otaStatus.error = downloadError.message;
+        
         return { 
           updated: false, 
           version: currentUIVersion, 
-          error: `Update available (v${latestUIVersion}) but download failed: ${downloadError.message}` 
+          error: `Update available (v${latestUIVersion}) but download/validation failed: ${downloadError.message}`,
+          silent: true // Don't show user notification
         };
       }
+    } else {
+      otaStatus.state = 'idle';
+      otaStatus.message = 'No UI updates available';
     }
 
     return { updated: false, version: currentUIVersion };
-    
+
   } catch (error) {
-    logBasic('warn', 'UI version check failed, using cached version', { error: error.message });
-    return { updated: false, version: getCurrentUIVersion(), error: error.message };
+    logBasic('error', 'UI version check failed', { error: error.message });
+    otaStatus.state = 'failed';
+    otaStatus.message = `Version check failed: ${error.message}`;
+    otaStatus.error = error.message;
+    return { 
+      updated: false, 
+      version: getCurrentUIVersion(), 
+      error: `UI update check failed: ${error.message}` 
+    };
   }
-}// Download and cache UI files
-async function downloadUIFiles(version) {
+}
+
+// Download and cache UI files
+async function downloadUIFiles(expectedVersion) {
   try {
+    otaStatus.state = 'downloading';
+    otaStatus.message = `Downloading UI version ${expectedVersion}...`;
+    otaStatus.version = expectedVersion;
+    otaStatus.error = null;
+    
     await initializeCacheDir();
     
     const filesToDownload = [
@@ -429,6 +531,9 @@ async function downloadUIFiles(version) {
       { name: 'package.json', url: `${UI_FILES_BASE_URL}package.json` }
     ];
     
+    const downloadedFiles = {};
+    
+    // Download all files first
     for (const file of filesToDownload) {
       try {
         logVerbose('info', `Downloading UI file: ${file.name}`);
@@ -438,40 +543,89 @@ async function downloadUIFiles(version) {
           throw new Error(`HTTP ${response.status} for ${file.name}`);
         }
         
-        let content = await response.text();
-        const cachePath = path.join(LOCAL_UI_CACHE_DIR, file.name);
-        
-        // For HTML files, update the script src to point to cached renderer.js
-        if (file.name === 'index.html') {
-          const cachedRendererPath = path.join(LOCAL_UI_CACHE_DIR, 'renderer.js');
-          content = content.replace(
-            '<script src="renderer.js"></script>',
-            `<script src="${cachedRendererPath}"></script>`
-          );
-        }
-        
-        // Backup existing cached file
-        if (fs.existsSync(cachePath)) {
-          fs.copyFileSync(cachePath, `${cachePath}.backup`);
-        }
-        
-        fs.writeFileSync(cachePath, content, 'utf8');
-        logVerbose('info', `UI file cached: ${file.name}`);
+        downloadedFiles[file.name] = await response.text();
+        logVerbose('info', `UI file downloaded: ${file.name}`);
         
       } catch (fileError) {
-        logBasic('error', `Failed to download UI file: ${file.name}`, { error: fileError.message });
-        throw fileError;
+        const errorMsg = `Failed to download UI file: ${file.name} - ${fileError.message}`;
+        logBasic('error', errorMsg);
+        otaStatus.state = 'failed';
+        otaStatus.message = errorMsg;
+        otaStatus.error = fileError.message;
+        throw new Error(errorMsg);
       }
     }
     
-    // Update UI version file
-    const versionFilePath = path.join(LOCAL_UI_CACHE_DIR, 'ui-version.txt');
-    fs.writeFileSync(versionFilePath, version, 'utf8');
+    // Validate versions in downloaded files BEFORE caching
+    const validationErrors = [];
     
-    logBasic('info', 'UI files downloaded and cached successfully', { version });
+    // Check HTML meta tag
+    const htmlContent = downloadedFiles['index.html'];
+    const htmlVersionMatch = htmlContent.match(/<meta\s+name="ui-version"\s+content="([^"]+)"/);
+    const htmlVersion = htmlVersionMatch ? htmlVersionMatch[1] : null;
+    if (!htmlVersion || htmlVersion !== expectedVersion) {
+      validationErrors.push(`HTML version mismatch: expected ${expectedVersion}, got ${htmlVersion || 'none'}`);
+    }
+    
+    // Check JS constant
+    const jsContent = downloadedFiles['renderer.js'];
+    const jsVersionMatch = jsContent.match(/THIS_UI_VERSION\s*=\s*['"]([^'"]+)['"]/);
+    const jsVersion = jsVersionMatch ? jsVersionMatch[1] : null;
+    if (!jsVersion || jsVersion !== expectedVersion) {
+      validationErrors.push(`JS version mismatch: expected ${expectedVersion}, got ${jsVersion || 'none'}`);
+    }
+    
+    // Check package.json uiVersion
+    try {
+      const packageContent = JSON.parse(downloadedFiles['package.json']);
+      const packageVersion = packageContent.uiVersion;
+      if (!packageVersion || packageVersion !== expectedVersion) {
+        validationErrors.push(`Package.json version mismatch: expected ${expectedVersion}, got ${packageVersion || 'none'}`);
+      }
+    } catch (parseError) {
+      validationErrors.push(`Failed to parse package.json: ${parseError.message}`);
+    }
+    
+    // If validation failed, don't cache and throw error
+    if (validationErrors.length > 0) {
+      const errorMsg = `Version validation failed: ${validationErrors.join('; ')}`;
+      logBasic('error', 'OTA version validation failed', { 
+        expectedVersion, 
+        htmlVersion, 
+        jsVersion, 
+        errors: validationErrors 
+      });
+      otaStatus.state = 'failed';
+      otaStatus.message = 'Version validation failed';
+      otaStatus.error = errorMsg;
+      throw new Error(errorMsg);
+    }
+    
+    // Validation passed - store files temporarily until user approval
+    pendingOTAFiles.files = downloadedFiles;
+    pendingOTAFiles.version = expectedVersion;
+    pendingOTAFiles.htmlVersion = htmlVersion;
+    pendingOTAFiles.jsVersion = jsVersion;
+    
+    logBasic('info', 'UI files downloaded and validated, waiting for user approval', { 
+      version: expectedVersion,
+      htmlVersion,
+      jsVersion
+    });
+    
+    // Show notification to user
+    showOTANotification();
+    
+    otaStatus.state = 'ready';
+    otaStatus.message = `UI version ${expectedVersion} ready to install`;
     
   } catch (error) {
     logBasic('error', 'Failed to download UI files', { error: error.message });
+    if (otaStatus.state !== 'failed') {
+      otaStatus.state = 'failed';
+      otaStatus.message = error.message;
+      otaStatus.error = error.message;
+    }
     throw error;
   }
 }
@@ -896,64 +1050,139 @@ async function fetchUIDebugInfo() {
   const cacheStatus = document.getElementById('uiCacheStatus');
   const rawDataContent = document.getElementById('uiRawData');
   
+  // Status summary elements
+  const otaCurrentState = document.getElementById('otaCurrentState');
+  const otaCurrentVersion = document.getElementById('otaCurrentVersion');
+  const otaEnabledStatus = document.getElementById('otaEnabledStatus');
+  const cacheDirectoryStatus = document.getElementById('cacheDirectoryStatus');
+  const cachedVersionStatus = document.getElementById('cachedVersionStatus');
+  const cacheFilesStatus = document.getElementById('cacheFilesStatus');
+  
   if (!debugContent || !cacheStatus || !rawDataContent) {
     console.error('UI Debug elements not found');
     return;
   }
   
   const timestamp = new Date().toLocaleString();
-  let debugInfo = `=== UI System Debug - ${timestamp} ===\n\n`;
+  
+  // Update status summary cards
+  if (otaCurrentState) {
+    otaCurrentState.textContent = otaStatus.state || 'Unknown';
+    otaCurrentState.className = `badge ${getStatusBadgeClass(otaStatus.state)}`;
+  }
+  if (otaCurrentVersion) {
+    otaCurrentVersion.textContent = otaStatus.version || getCurrentUIVersion() || 'N/A';
+  }
+  if (otaEnabledStatus) {
+    otaEnabledStatus.textContent = appSettings.enableOTA ? '✅ Enabled' : '❌ Disabled';
+  }
+  
+  // Generate detailed network diagnostics
+  let debugInfo = `╔═══════════════════════════════════════════════════════════╗\n`;
+  debugInfo += `║              UI OTA NETWORK DIAGNOSTICS                  ║\n`;
+  debugInfo += `║              Generated: ${timestamp.padEnd(25)} ║\n`;
+  debugInfo += `╚═══════════════════════════════════════════════════════════╝\n\n`;
   
   try {
-    debugInfo += '🎨 Checking UI version...\n';
-    debugInfo += `URL: ${UI_VERSION_URL}\n`;
+    debugInfo += `┌─ NETWORK CONNECTIVITY TEST ─────────────────────────────┐\n`;
+    debugInfo += `│ Testing UI version endpoint...                          │\n`;
+    debugInfo += `└─────────────────────────────────────────────────────────┘\n`;
+    debugInfo += `🌐 Endpoint: ${UI_VERSION_URL}\n`;
     
     const response = await fetch(UI_VERSION_URL);
-    debugInfo += `Status: ${response.status} ${response.statusText}\n`;
-    debugInfo += `Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}\n`;
+    debugInfo += `📊 Status: ${response.status} ${response.statusText}\n`;
+    debugInfo += `⏱️  Response Time: ${Date.now() - performance.now()}ms (approx)\n`;
+    debugInfo += `📋 Headers:\n`;
+    
+    for (const [key, value] of response.headers.entries()) {
+      debugInfo += `   ${key}: ${value}\n`;
+    }
     
     if (response.ok) {
       const uiVersionText = await response.text();
-      debugInfo += `✅ Response received: "${uiVersionText.trim()}"\n`;
-      debugInfo += `📊 Current UI version: ${getCurrentUIVersion()}\n`;
-      debugInfo += `📊 Bundled UI version: ${THIS_UI_VERSION}\n`;
-      debugInfo += `📊 Is newer: ${isNewerVersion(uiVersionText.trim(), getCurrentUIVersion())}\n\n`;
+      const remoteVersion = uiVersionText.trim();
+      const currentVersion = getCurrentUIVersion();
+      const isNewer = isNewerVersion(remoteVersion, currentVersion);
       
-      rawDataContent.textContent = uiVersionText;
+      debugInfo += `\n┌─ VERSION ANALYSIS ──────────────────────────────────────┐\n`;
+      debugInfo += `│ Remote Version: ${remoteVersion.padEnd(42)} │\n`;
+      debugInfo += `│ Current Version: ${currentVersion.padEnd(41)} │\n`;
+      debugInfo += `│ Bundled Version: ${THIS_UI_VERSION.padEnd(41)} │\n`;
+      debugInfo += `│ Binary Version: ${packageJson.version.padEnd(42)} │\n`;
+      debugInfo += `│ Update Available: ${(isNewer ? 'YES' : 'NO').padEnd(39)} │\n`;
+      debugInfo += `│ First Launch: ${(isFirstLaunchOfBinary ? 'YES' : 'NO').padEnd(43)} │\n`;
+      debugInfo += `└─────────────────────────────────────────────────────────┘\n\n`;
+      
+      rawDataContent.textContent = `Remote Version Response:\n${uiVersionText}\n\nResponse Headers:\n${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`;
     } else {
-      debugInfo += `❌ Failed to fetch UI version\n\n`;
-      rawDataContent.textContent = 'No data received';
+      debugInfo += `\n❌ VERSION CHECK FAILED\n`;
+      debugInfo += `   Unable to retrieve remote version information\n\n`;
+      rawDataContent.textContent = `Error: ${response.status} ${response.statusText}`;
     }
     
-    // Test UI file URLs
-    debugInfo += '🧪 Testing UI file endpoints...\n';
+    // Test UI file endpoints
+    debugInfo += `┌─ FILE ENDPOINT TESTING ─────────────────────────────────┐\n`;
     
-    const uiFiles = ['index.html', 'renderer.js'];
+    const uiFiles = [
+      { name: 'index.html', url: `${UI_FILES_BASE_URL}index.html` },
+      { name: 'renderer.js', url: `${UI_FILES_BASE_URL}renderer.js` },
+      { name: 'package.json', url: `${UI_FILES_BASE_URL}package.json` }
+    ];
     
     for (const file of uiFiles) {
       try {
-        const fileUrl = `${UI_FILES_BASE_URL}${file}`;
-        debugInfo += `\n📄 Testing: ${file}\n`;
-        debugInfo += `   URL: ${fileUrl}\n`;
-        const testResponse = await fetch(fileUrl, { method: 'HEAD' });
-        debugInfo += `   Status: ${testResponse.status} ${testResponse.statusText}\n`;
-        debugInfo += `   Accessible: ${testResponse.ok ? '✅ Yes' : '❌ No'}\n`;
+        debugInfo += `├─ Testing: ${file.name.padEnd(45)} │\n`;
+        const testResponse = await fetch(file.url, { method: 'HEAD' });
+        debugInfo += `│  Status: ${testResponse.status} ${testResponse.statusText.padEnd(35)} │\n`;
+        debugInfo += `│  Accessible: ${(testResponse.ok ? '✅ YES' : '❌ NO').padEnd(38)} │\n`;
+        
         if (testResponse.ok) {
           const contentLength = testResponse.headers.get('content-length');
           if (contentLength) {
-            debugInfo += `   Size: ${(parseInt(contentLength) / 1024).toFixed(1)} KB\n`;
+            const sizeKB = (parseInt(contentLength) / 1024).toFixed(1);
+            debugInfo += `│  Size: ${(sizeKB + ' KB').padEnd(43)} │\n`;
+          }
+          const lastModified = testResponse.headers.get('last-modified');
+          if (lastModified) {
+            debugInfo += `│  Modified: ${lastModified.padEnd(39)} │\n`;
           }
         }
+        debugInfo += `├─────────────────────────────────────────────────────────┤\n`;
       } catch (error) {
-        debugInfo += `   Error: ${error.message}\n`;
+        debugInfo += `│  Error: ${error.message.padEnd(42)} │\n`;
+        debugInfo += `├─────────────────────────────────────────────────────────┤\n`;
       }
     }
+    debugInfo += `└─────────────────────────────────────────────────────────┘\n\n`;
     
   } catch (error) {
-    debugInfo += `❌ Error: ${error.message}\n`;
-    debugInfo += `Stack: ${error.stack}\n`;
-    rawDataContent.textContent = `Error: ${error.message}`;
+    debugInfo += `❌ NETWORK ERROR:\n`;
+    debugInfo += `   ${error.message}\n`;
+    debugInfo += `   Stack: ${error.stack}\n\n`;
+    rawDataContent.textContent = `Network Error: ${error.message}`;
   }
+  
+  // Add OTA Status Information
+  debugInfo += `┌─ OTA SYSTEM STATUS ─────────────────────────────────────┐\n`;
+  debugInfo += `│ State: ${otaStatus.state.padEnd(47)} │\n`;
+  debugInfo += `│ Message: ${(otaStatus.message || 'None').padEnd(45)} │\n`;
+  debugInfo += `│ Version: ${(otaStatus.version || 'N/A').padEnd(45)} │\n`;
+  debugInfo += `│ Error: ${(otaStatus.error || 'None').padEnd(47)} │\n`;
+  debugInfo += `│ OTA Enabled: ${(appSettings.enableOTA ? 'Yes' : 'No').padEnd(41)} │\n`;
+  debugInfo += `│ Pending Files: ${(pendingOTAFiles.files ? 'Yes' : 'No').padEnd(39)} │\n`;
+  debugInfo += `└─────────────────────────────────────────────────────────┘\n`;
+  
+  debugContent.textContent = debugInfo;
+  
+  // Add OTA Status Information
+  debugInfo += `\n🔄 OTA Status Information:\n`;
+  debugInfo += `   State: ${otaStatus.state}\n`;
+  debugInfo += `   Message: ${otaStatus.message}\n`;
+  debugInfo += `   Version: ${otaStatus.version || 'N/A'}\n`;
+  debugInfo += `   Error: ${otaStatus.error || 'None'}\n`;
+  debugInfo += `   Binary Version: ${packageJson.version}\n`;
+  debugInfo += `   First Launch: ${isFirstLaunchOfBinary ? 'Yes' : 'No'}\n`;
+  debugInfo += `   OTA Enabled: ${appSettings.enableOTA ? 'Yes' : 'No'}\n\n`;
   
   // Check local cache status
   let cacheInfo = `=== Local Cache Status ===\n\n`;
@@ -971,8 +1200,44 @@ async function fetchUIDebugInfo() {
         cacheInfo += `❌ No cached version file\n`;
       }
       
+      const requiredFiles = ['index.html', 'renderer.js', 'ui-version.txt'];
+      cacheInfo += `\n📄 Required cached files:\n`;
+      
+      for (const file of requiredFiles) {
+        const filePath = path.join(LOCAL_UI_CACHE_DIR, file);
+        const exists = fs.existsSync(filePath);
+        cacheInfo += `   ${file}: ${exists ? '✅' : '❌'} ${exists ? 'EXISTS' : 'MISSING'}\n`;
+        
+        if (exists) {
+          try {
+            const stats = fs.statSync(filePath);
+            cacheInfo += `      Size: ${(stats.size / 1024).toFixed(1)} KB\n`;
+            cacheInfo += `      Modified: ${stats.mtime.toLocaleString()}\n`;
+            
+            // For HTML and JS files, check if they contain version info
+            if (file === 'index.html' && stats.size > 0) {
+              const content = fs.readFileSync(filePath, 'utf8');
+              const metaVersion = content.match(/content="([^"]+)"/)?.[1];
+              if (metaVersion) {
+                cacheInfo += `      HTML version: ${metaVersion}\n`;
+              }
+            }
+            
+            if (file === 'renderer.js' && stats.size > 0) {
+              const content = fs.readFileSync(filePath, 'utf8');
+              const jsVersion = content.match(/THIS_UI_VERSION = '([^']+)'/)?.[1];
+              if (jsVersion) {
+                cacheInfo += `      JS version: ${jsVersion}\n`;
+              }
+            }
+          } catch (fileError) {
+            cacheInfo += `      Error reading: ${fileError.message}\n`;
+          }
+        }
+      }
+      
       const files = fs.readdirSync(LOCAL_UI_CACHE_DIR);
-      cacheInfo += `📄 Cached files: ${files.join(', ')}\n`;
+      cacheInfo += `\n� All files in cache: ${files.join(', ')}\n`;
       
       for (const file of files) {
         const filePath = path.join(LOCAL_UI_CACHE_DIR, file);
@@ -989,6 +1254,21 @@ async function fetchUIDebugInfo() {
   debugContent.textContent = debugInfo;
   cacheStatus.textContent = cacheInfo;
   logVerbose('info', 'UI debug info refreshed');
+  
+  // Open the UI debug modal
+  try {
+    const uiDebugModal = document.getElementById('uiDebugModal');
+    if (uiDebugModal) {
+      const modal = new bootstrap.Modal(uiDebugModal);
+      modal.show();
+    } else {
+      console.error('UI Debug modal element not found');
+      alert('UI Debug modal not found');
+    }
+  } catch (error) {
+    console.error('Error opening UI debug modal:', error);
+    alert('Error opening UI debug modal: ' + error.message);
+  }
 }
 
 // Ensure Documents folder exists
@@ -1275,14 +1555,6 @@ function checkVersionAndShowReleaseNotes() {
     // Mark that we need to show release notes
     pendingReleaseNotes = true;
     
-    // If this is a binary update, show settings verification modal
-    if (isBinaryUpdate) {
-      setTimeout(() => {
-        showSettingsVerificationModal();
-      }, 1000);
-      return;
-    }
-    
     // Only show immediately if settings aren't needed
     const savedSettings = localStorage.getItem('lectureLoggerSettings');
     if (savedSettings) {
@@ -1312,47 +1584,6 @@ function checkVersionAndShowReleaseNotes() {
   } else if (savedBuildNumber !== currentBuildNumber) {
     // Only build number changed (not version) - still a binary update
     localStorage.setItem('lectureLoggerBuildNumber', currentBuildNumber);
-    if (isBinaryUpdate) {
-      setTimeout(() => {
-        showSettingsVerificationModal();
-      }, 1000);
-    }
-  }
-}
-
-// Show settings verification modal after binary updates
-function showSettingsVerificationModal() {
-  try {
-    const modal = document.getElementById('settingsVerificationModal');
-    if (!modal) {
-      console.error('Settings verification modal not found');
-      return;
-    }
-
-    // Load current settings into the verification form
-    const verifyExcelPath = document.getElementById('verifyExcelPath');
-    const verifyStartingRow = document.getElementById('verifyStartingRow');
-    const verifyAutoUpdateCheck = document.getElementById('verifyAutoUpdateCheck');
-    const verifyEnableOTA = document.getElementById('verifyEnableOTA');
-    const verifyVerboseLogging = document.getElementById('verifyVerboseLogging');
-
-    if (verifyExcelPath) verifyExcelPath.value = appSettings.excelPath || '';
-    if (verifyStartingRow) verifyStartingRow.value = appSettings.startingRow || 125;
-    if (verifyAutoUpdateCheck) verifyAutoUpdateCheck.checked = appSettings.autoUpdateCheck !== false;
-    if (verifyEnableOTA) verifyEnableOTA.checked = appSettings.enableOTA !== false;
-    if (verifyVerboseLogging) verifyVerboseLogging.checked = appSettings.verboseLogging === true;
-
-    const settingsVerificationModal = new bootstrap.Modal(modal);
-    settingsVerificationModal.show();
-    
-    logBasic('info', 'Settings verification modal shown after binary update');
-  } catch (error) {
-    console.error('Error showing settings verification modal:', error);
-    // Fallback to regular release notes
-    if (pendingReleaseNotes) {
-      showReleaseNotes();
-      pendingReleaseNotes = false;
-    }
   }
 }
 
@@ -1454,10 +1685,38 @@ function showReleaseNotes() {
   }
 }
 
+// OTA notification functions - global scope
+function showOTANotification() {
+  const notification = document.getElementById('uiUpdateNotification');
+  if (notification) {
+    notification.style.display = 'block';
+    notification.classList.add('show');
+    
+    logBasic('info', 'Showing OTA notification to user for approval');
+    
+    // No auto-hide - user must make a choice
+  }
+}
+
+// Helper function for status badge classes
+function getStatusBadgeClass(state) {
+  switch (state) {
+    case 'checking': return 'bg-info';
+    case 'downloading': return 'bg-warning';
+    case 'ready': return 'bg-success';
+    case 'failed': return 'bg-danger';
+    case 'disabled': return 'bg-secondary';
+    default: return 'bg-secondary';
+  }
+}
+
 // Show settings modal on first run
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize cache directory first
   await initializeCacheDir();
+  
+  // Check binary version and handle first launch
+  checkBinaryVersionFirstLaunch();
   
   // Initialize UI system
   const uiStatus = loadUIFiles();
@@ -1472,11 +1731,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     setTimeout(async () => {
       try {
         const uiUpdateResult = await checkUIVersion();
-        if (uiUpdateResult.updated) {
+        if (uiUpdateResult.updated && !uiUpdateResult.silent) {
           logBasic('info', 'UI updated in background', uiUpdateResult);
           
-          // Show subtle refresh notification instead of alert
-          showUIUpdateNotification(uiUpdateResult.version);
+          // Show subtle refresh notification only if validation passed
+          showOTANotification();
+        } else if (uiUpdateResult.silent) {
+          logBasic('info', 'UI update available but validation failed - not showing notification', uiUpdateResult);
         }
       } catch (error) {
         logVerbose('warn', 'Background UI update check failed', { error: error.message });
@@ -2021,6 +2282,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     }, 300);
   });
   
+  document.getElementById('devUIDebug').addEventListener('click', function() {
+    // Close developer modal first
+    const developerModal = bootstrap.Modal.getInstance(document.getElementById('developerModal'));
+    if (developerModal) {
+      developerModal.hide();
+    }
+    // Show UI debug modal
+    setTimeout(() => {
+      fetchUIDebugInfo();
+    }, 300);
+  });
+  
   
   // Simple UI Management buttons
   const checkUIUpdatesBtn = document.getElementById('checkUIUpdatesBtn');
@@ -2060,10 +2333,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const result = await checkUIVersion();
         
-        if (result.updated) {
+        if (result.updated && !result.silent) {
           if (statusDiv) statusDiv.innerHTML = `<span class="text-success">✅ Updated to v${result.version}! Restart to apply.</span>`;
-          // Show subtle refresh notification
-          showUIUpdateNotification(result.version);
+          // Show subtle refresh notification only if validation passed
+          showOTANotification();
+        } else if (result.silent) {
+          if (statusDiv) statusDiv.innerHTML = `<span class="text-danger">❌ Update failed validation - check Developer Tools</span>`;
         } else if (result.error) {
           if (statusDiv) statusDiv.innerHTML = `<span class="text-warning">⚠️ ${result.error}</span>`;
         } else {
@@ -2102,38 +2377,148 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
-  // UI Update notification functions
-  function showUIUpdateNotification(version) {
-    const notification = document.getElementById('uiUpdateNotification');
-    if (notification) {
-      notification.style.display = 'block';
-      notification.classList.add('show');
+  // Force Check OTA button handler
+  const forceCheckOTABtn = document.getElementById('forceCheckOTABtn');
+  if (forceCheckOTABtn) {
+    forceCheckOTABtn.addEventListener('click', async function() {
+      console.log('Force Check OTA button clicked');
       
-      // Auto-hide after 10 seconds if user doesn't interact
-      setTimeout(() => {
-        if (notification.classList.contains('show')) {
-          notification.classList.remove('show');
-          setTimeout(() => {
-            notification.style.display = 'none';
-          }, 150);
+      const statusDiv = document.getElementById('uiStatusDisplay');
+      const originalText = this.innerHTML;
+      
+      try {
+        this.disabled = true;
+        this.innerHTML = '🚀 Force Checking...';
+        if (statusDiv) statusDiv.innerHTML = 'Forcing OTA UI check...';
+        
+        // Force enable OTA for this check if disabled
+        const wasOTADisabled = !appSettings.enableOTA;
+        if (wasOTADisabled) {
+          appSettings.enableOTA = true;
+          logBasic('info', 'Temporarily enabling OTA for force check');
         }
-      }, 10000);
-    }
+        
+        // Reset OTA status
+        otaStatus.state = 'checking';
+        otaStatus.message = 'Force checking for UI updates';
+        otaStatus.error = null;
+        
+        logBasic('info', 'Force checking OTA UI updates from developer tools');
+        
+        // Clear any pending files first
+        pendingOTAFiles.files = null;
+        pendingOTAFiles.version = null;
+        pendingOTAFiles.htmlVersion = null;
+        pendingOTAFiles.jsVersion = null;
+        
+        // Get remote version
+        const response = await fetch(UI_VERSION_URL);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const remoteVersion = (await response.text()).trim();
+        const currentVersion = getCurrentUIVersion();
+        
+        logBasic('info', 'Force OTA check versions', { 
+          remote: remoteVersion, 
+          current: currentVersion 
+        });
+        
+        // Force download even if versions match
+        await downloadUIFiles(remoteVersion);
+        
+        if (statusDiv) {
+          statusDiv.innerHTML = `<span class="text-success">✅ Force OTA check completed! Check notification.</span>`;
+        }
+        
+        // Restore OTA setting if it was disabled
+        if (wasOTADisabled) {
+          appSettings.enableOTA = false;
+          await saveSettings(appSettings.excelPath, appSettings.startingRow, appSettings.verboseLogging, appSettings.autoUpdateCheck, false, appSettings.testVersion || '');
+          logBasic('info', 'Restored OTA disabled setting after force check');
+        }
+        
+      } catch (error) {
+        console.error('Error in force OTA check:', error);
+        otaStatus.state = 'failed';
+        otaStatus.error = error.message;
+        
+        if (statusDiv) {
+          statusDiv.innerHTML = `<span class="text-danger">❌ Force OTA check failed: ${error.message}</span>`;
+        }
+        
+        logBasic('error', 'Force OTA check failed', error);
+      } finally {
+        this.disabled = false;
+        this.innerHTML = originalText;
+      }
+    });
   }
 
-  // Refresh Now button handler
-  const refreshNowBtn = document.getElementById('refreshNowBtn');
-  if (refreshNowBtn) {
-    refreshNowBtn.addEventListener('click', async function() {
+  // OTA UI Update notification button handlers
+  const reloadNowBtn = document.getElementById('reloadNowBtn');
+  const notYetBtn = document.getElementById('notYetBtn');
+  
+  if (reloadNowBtn) {
+    reloadNowBtn.addEventListener('click', async function() {
       // Close the notification first
       const notification = document.getElementById('uiUpdateNotification');
       if (notification) {
         notification.classList.remove('show');
+        // Also hide the element completely
+        setTimeout(() => {
+          notification.style.display = 'none';
+        }, 150); // Wait for fade animation
       }
       
       // Show loading state
       this.disabled = true;
-      this.innerHTML = '🔄 Restarting...';
+      this.innerHTML = '🔄 Reloading...';
+      
+      // Cache the pending OTA files before restarting
+      if (pendingOTAFiles.files && Object.keys(pendingOTAFiles.files).length > 0) {
+        try {
+          logBasic('info', 'User approved OTA update, caching files before restart');
+          
+          await initializeCacheDir();
+          
+          // Cache the validated files
+          for (const [fileName, content] of Object.entries(pendingOTAFiles.files)) {
+            const cachePath = path.join(LOCAL_UI_CACHE_DIR, fileName);
+            
+            // Backup existing cached file
+            if (fs.existsSync(cachePath)) {
+              fs.copyFileSync(cachePath, `${cachePath}.backup`);
+            }
+            
+            fs.writeFileSync(cachePath, content, 'utf8');
+            logVerbose('info', `OTA UI file cached: ${fileName}`);
+          }
+          
+          // Update UI version file
+          const versionFilePath = path.join(LOCAL_UI_CACHE_DIR, 'ui-version.txt');
+          fs.writeFileSync(versionFilePath, pendingOTAFiles.version, 'utf8');
+          
+          logBasic('info', 'OTA UI files cached successfully after user approval', { 
+            version: pendingOTAFiles.version,
+            htmlVersion: pendingOTAFiles.htmlVersion,
+            jsVersion: pendingOTAFiles.jsVersion
+          });
+          
+          // Clear pending files
+          pendingOTAFiles.files = null;
+          pendingOTAFiles.version = null;
+          pendingOTAFiles.htmlVersion = null;
+          pendingOTAFiles.jsVersion = null;
+          
+        } catch (cacheError) {
+          logBasic('error', 'Failed to cache OTA files after user approval', cacheError);
+          this.innerHTML = '❌ Cache Failed';
+          this.disabled = false;
+          return;
+        }
+      }
       
       // Restart the Electron app to load cached UI files
       setTimeout(async () => {
@@ -2158,6 +2543,22 @@ document.addEventListener('DOMContentLoaded', async function() {
           }
         }
       }, 200);
+    });
+  }
+  
+  if (notYetBtn) {
+    notYetBtn.addEventListener('click', function() {
+      // Just dismiss the notification without caching files
+      const notification = document.getElementById('uiUpdateNotification');
+      if (notification) {
+        notification.classList.remove('show');
+        // Also hide the element completely to prevent blocking other UI
+        setTimeout(() => {
+          notification.style.display = 'none';
+        }, 150); // Wait for fade animation
+      }
+      
+      logBasic('info', 'User declined OTA update, files remain uncached');
     });
   }
 
@@ -2274,67 +2675,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
-  // Settings Verification Modal handlers
-  const verifyBrowseFileBtn = document.getElementById('verifyBrowseFileBtn');
-  const verifyFileInput = document.getElementById('verifyFileInput');
-  const confirmSettingsVerification = document.getElementById('confirmSettingsVerification');
-
-  if (verifyBrowseFileBtn && verifyFileInput) {
-    verifyBrowseFileBtn.addEventListener('click', () => {
-      verifyFileInput.click();
-    });
-
-    verifyFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file && file.name.endsWith('.xlsx')) {
-        document.getElementById('verifyExcelPath').value = file.path;
-      }
-    });
-  }
-
-  if (confirmSettingsVerification) {
-    confirmSettingsVerification.addEventListener('click', async () => {
-      try {
-        const excelPath = document.getElementById('verifyExcelPath').value;
-        const startingRow = parseInt(document.getElementById('verifyStartingRow').value) || 125;
-        const autoUpdateCheck = document.getElementById('verifyAutoUpdateCheck').checked;
-        const enableOTA = document.getElementById('verifyEnableOTA').checked;
-        const verboseLogging = document.getElementById('verifyVerboseLogging').checked;
-
-        await saveSettings(excelPath, startingRow, verboseLogging, autoUpdateCheck, enableOTA);
-        
-        // Close the modal - try multiple methods to ensure it closes
-        const modalEl = document.getElementById('settingsVerificationModal');
-        if (modalEl) {
-          // Try to get existing instance first
-          let modal = bootstrap.Modal.getInstance(modalEl);
-          if (modal) {
-            modal.hide();
-          } else {
-            // If no instance exists, create one and hide it immediately
-            modal = new bootstrap.Modal(modalEl);
-            modal.hide();
-          }
-        }
-
-        showSuccessAlert('Settings verified and saved!', 'Thank you for confirming your settings after the update.');
-        
-        // Show release notes if pending
-        if (pendingReleaseNotes) {
-          setTimeout(() => {
-            showReleaseNotes();
-            pendingReleaseNotes = false;
-          }, 500);
-        }
-      } catch (error) {
-        console.error('Error in settings verification:', error);
-        alert('Error saving settings: ' + error.message);
-      }
-    });
-  }
-
-
-  
   // Check for updates on startup if enabled
   setTimeout(() => {
     if (appSettings.autoUpdateCheck !== false) { // Default to true if not set

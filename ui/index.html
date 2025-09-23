@@ -129,14 +129,18 @@
     <div class="d-flex align-items-center">
       <div class="me-2">🎨</div>
       <div class="flex-grow-1">
-        <strong>UI Updated!</strong><br>
-        <small class="text-muted">New interface is ready</small>
+        <strong>New OTA UI Update!</strong><br>
+        <small class="text-muted">Interface update is ready</small>
       </div>
-      <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="refreshNowBtn">
-        🔄 Refresh Now
+    </div>
+    <div class="mt-2 d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-primary flex-fill" id="reloadNowBtn">
+        🔄 Reload
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="notYetBtn">
+        ⏸️ Not Yet
       </button>
     </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
 
   <!-- GitHub Gist Debug Modal (Development) -->
@@ -186,28 +190,69 @@
         </div>
         <div class="modal-body">
           <div class="alert alert-info">
-            <strong>UI Debug Information:</strong> This shows detailed information about the UI OTA update system.
+            <strong>🎨 UI OTA System Debug Information</strong><br>
+            <small>Comprehensive diagnostic information for the Over-The-Air UI update system</small>
           </div>
           
-          <div class="mb-3">
-            <h6 class="text-primary">📡 UI Version Requests</h6>
-            <div id="uiDebugContent" class="font-monospace small bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
-              Loading UI debug information...
+          <!-- Status Overview -->
+          <div class="mb-4">
+            <h6 class="text-primary border-bottom pb-2">� System Status Overview</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="card border-info h-100">
+                  <div class="card-body p-3">
+                    <h6 class="card-title text-info mb-2">🔄 OTA Status</h6>
+                    <div id="otaStatusSummary" class="small">
+                      <div><strong>State:</strong> <span id="otaCurrentState" class="badge bg-secondary">Unknown</span></div>
+                      <div class="mt-1"><strong>Version:</strong> <span id="otaCurrentVersion">N/A</span></div>
+                      <div class="mt-1"><strong>Enabled:</strong> <span id="otaEnabledStatus">N/A</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card border-success h-100">
+                  <div class="card-body p-3">
+                    <h6 class="card-title text-success mb-2">💾 Cache Info</h6>
+                    <div id="cacheStatusSummary" class="small">
+                      <div><strong>Directory:</strong> <span id="cacheDirectoryStatus">Checking...</span></div>
+                      <div class="mt-1"><strong>Version:</strong> <span id="cachedVersionStatus">N/A</span></div>
+                      <div class="mt-1"><strong>Files:</strong> <span id="cacheFilesStatus">N/A</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
-          <div class="mb-3">
-            <h6 class="text-primary">💾 Local Cache Status</h6>
-            <div id="uiCacheStatus" class="font-monospace small bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
-              Checking cache status...
-            </div>
-            </div>
-          </div>
+          <!-- Detailed Information Tabs -->
+          <ul class="nav nav-tabs" id="debugTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" type="button" role="tab">📡 Network</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="cache-tab" data-bs-toggle="tab" data-bs-target="#cache" type="button" role="tab">💾 Cache</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="raw-tab" data-bs-toggle="tab" data-bs-target="#raw" type="button" role="tab">🔧 Raw Data</button>
+            </li>
+          </ul>
           
-          <div class="mb-3">
-            <h6 class="text-primary">🔧 Raw UI Data</h6>
-            <div id="uiRawData" class="font-monospace small bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
-              No data yet...
+          <div class="tab-content mt-3" id="debugTabsContent">
+            <div class="tab-pane fade show active" id="network" role="tabpanel">
+              <div id="uiDebugContent" class="font-monospace small bg-light p-3 rounded border" style="max-height: 350px; overflow-y: auto; white-space: pre-wrap;">
+                Loading network diagnostic information...
+              </div>
+            </div>
+            <div class="tab-pane fade" id="cache" role="tabpanel">
+              <div id="uiCacheStatus" class="font-monospace small bg-light p-3 rounded border" style="max-height: 350px; overflow-y: auto; white-space: pre-wrap;">
+                Analyzing cache status...
+              </div>
+            </div>
+            <div class="tab-pane fade" id="raw" role="tabpanel">
+              <div id="uiRawData" class="font-monospace small bg-light p-3 rounded border" style="max-height: 350px; overflow-y: auto; white-space: pre-wrap;">
+                No raw data available yet...
+              </div>
             </div>
           </div>
         </div>
@@ -343,14 +388,18 @@
     <div class="d-flex align-items-center">
       <div class="me-2">🎨</div>
       <div class="flex-grow-1">
-        <strong>UI Updated!</strong><br>
-        <small class="text-muted">New interface is ready</small>
+        <strong>New OTA UI Update!</strong><br>
+        <small class="text-muted">Interface update is ready</small>
       </div>
-      <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="refreshNowBtn">
-        🔄 Refresh Now
+    </div>
+    <div class="mt-2 d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-primary flex-fill" id="reloadNowBtn">
+        🔄 Reload
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="notYetBtn">
+        ⏸️ Not Yet
       </button>
     </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
 
   <div class="container py-5">
@@ -561,82 +610,6 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-primary" id="saveInitialSetup">Get Started!</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Settings Verification Modal (after binary updates) -->
-  <div class="modal fade" id="settingsVerificationModal" tabindex="-1" aria-labelledby="settingsVerificationModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="settingsVerificationModalLabel">🔄 App Updated - Please Verify Settings</h5>
-        </div>
-        <div class="modal-body">
-          <div class="alert alert-info" role="alert">
-            <div class="d-flex align-items-center">
-              <span class="me-2">🎉</span>
-              <div>
-                <strong>Lecture Logger has been updated!</strong><br>
-                <small>Please review and confirm your settings are still correct.</small>
-              </div>
-            </div>
-          </div>
-          
-          <form id="settings-verification-form">
-            <div class="mb-3">
-              <label for="verifyExcelPath" class="form-label">Excel File Location</label>
-              <div class="input-group">
-                <input type="text" class="form-control" id="verifyExcelPath" required 
-                       placeholder="Select your Excel (.xlsx) file...">
-                <button class="btn btn-outline-secondary" type="button" id="verifyBrowseFileBtn">📁 Browse</button>
-                <input type="file" id="verifyFileInput" accept=".xlsx" style="display: none;">
-              </div>
-              <div class="form-text">File path setting (Excel functionality disabled - for UI compatibility only)</div>
-            </div>
-            
-            <div class="mb-3">
-              <label for="verifyStartingRow" class="form-label">Starting Row Number</label>
-              <input type="number" class="form-control" id="verifyStartingRow" required min="1" value="125">
-              <div class="form-text">Row setting (Excel functionality disabled - for UI compatibility only)</div>
-            </div>
-            
-            <!-- Update Settings Section -->
-            <div class="border-top pt-3 mt-4">
-              <h6 class="text-primary mb-3">🔄 Update Preferences</h6>
-              <div class="mb-3">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="verifyAutoUpdateCheck" checked>
-                  <label class="form-check-label" for="verifyAutoUpdateCheck">
-                    <strong>Automatic Update Checking</strong>
-                  </label>
-                </div>
-                <div class="form-text">Check for app updates when starting Lecture Logger</div>
-              </div>
-              <div class="mb-3">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="verifyEnableOTA" checked>
-                  <label class="form-check-label" for="verifyEnableOTA">
-                    <strong>Automatic UI Updates</strong>
-                  </label>
-                </div>
-                <div class="form-text">Allow interface improvements to download automatically</div>
-              </div>
-              <div class="mb-3">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="verifyVerboseLogging">
-                  <label class="form-check-label" for="verifyVerboseLogging">
-                    <strong>Verbose Logging</strong>
-                  </label>
-                </div>
-                <div class="form-text">Enable detailed logging for troubleshooting</div>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" id="confirmSettingsVerification">✅ Settings Look Good</button>
         </div>
       </div>
     </div>
@@ -886,14 +859,24 @@
           <div class="mb-4">
             <h6 class="text-primary border-bottom pb-2">🎨 UI Management</h6>
             <div class="row g-2 mb-3">
-              <div class="col-6">
+              <div class="col-3">
                 <button type="button" class="btn btn-info btn-sm w-100" id="checkUIUpdatesBtn">
                   🔄 Check Updates
                 </button>
               </div>
-              <div class="col-6">
+              <div class="col-3">
+                <button type="button" class="btn btn-primary btn-sm w-100" id="forceCheckOTABtn">
+                  🚀 Force OTA Check
+                </button>
+              </div>
+              <div class="col-3">
                 <button type="button" class="btn btn-warning btn-sm w-100" id="clearUICacheBtn">
                   🗑️ Clear Cache
+                </button>
+              </div>
+              <div class="col-3">
+                <button type="button" class="btn btn-success btn-sm w-100" id="devUIDebug">
+                  🔍 UI Debug
                 </button>
               </div>
             </div>
