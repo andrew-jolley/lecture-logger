@@ -424,3 +424,8 @@ ipcMain.handle('delete-ui-cache', async () => {
     return { success: false, error: error.message };
   }
 });
+
+// IPC handler to check if UI files are cached or bundled
+ipcMain.handle('get-ui-source', async () => {
+  return shouldUseCachedUI() ? 'cached' : 'bundled';
+});

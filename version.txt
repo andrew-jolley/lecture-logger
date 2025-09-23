@@ -1,6 +1,8 @@
 Latest_Version: 2.5.6
 Download_Link_Mac: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.5.0a/Lecture.Logger-2.5.6-arm64.dmg
 Download_Link_Win: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.5.0a/Lecture.Logger.Setup.2.5.6.exe
+Download_Link_Mac: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.5.0a/Lecture.Logger-2.5.6-arm64.dmg
+Download_Link_Win: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.5.0a/Lecture.Logger.Setup.2.5.6.exe
 Release_Notes:
 🎨 **NEW: Over-The-Air UI Updates** - Interface automatically updates without fully updating the app
 📱 **Self-Identifying UI System** - Seamless version tracking with embedded UI version constants

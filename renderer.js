@@ -1955,7 +1955,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Info button to show About modal - moved inside DOMContentLoaded
   const infoBtn = document.getElementById('infoBtn');
   if (infoBtn) {
-    infoBtn.addEventListener('click', function(event) {
+    infoBtn.addEventListener('click', async function(event) {
       event.stopPropagation(); // Prevent header click counting
       logBasic('info', 'Info button clicked');
       
@@ -1973,6 +1973,10 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (typeof bootstrap !== 'undefined') {
             const aboutModal = new bootstrap.Modal(aboutModalEl);
             
+            // Get UI source type (cached or bundled)
+            const uiSource = await ipcRenderer.invoke('get-ui-source');
+            const uiSourceLabel = uiSource === 'cached' ? 'cached' : 'bundled';
+            
             // Update version info in about modal
             const versionInfo = document.querySelector('#aboutModal .modal-body');
             if (versionInfo) {
@@ -1981,7 +1985,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <div class="text-center mb-3">
                   <h4 class="text-primary">📚 Lecture Logger</h4>
                   <p class="text-muted">Version ${currentVersion} (${buildNumber})</p>
-                  <p class="text-muted">UI Version: ${uiVersion} ${uiStatus.hasUpdate ? '(Updated - restart to apply)' : '(Current)'}</p>
+                  <p class="text-muted">UI Version: ${uiVersion} ${uiStatus.hasUpdate ? '(Updated - restart to apply)' : `(${uiSourceLabel})`}</p>
                   <p class="text-muted">Electron ${electronVersion} • Built ${buildDate}</p>
                 </div>
                 <hr>
