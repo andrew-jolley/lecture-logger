@@ -1,8 +1,8 @@
 {
   "name": "lecture-logger",
-  "version": "2.5.7",
-  "buildNumber": "20250923.114",
-  "uiVersion": "1.6.8",
+  "version": "2.5.8",
+  "buildNumber": "20250923.115",
+  "uiVersion": "1.6.9",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley",
   "main": "main.js",

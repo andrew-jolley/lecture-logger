@@ -399,6 +399,12 @@ ipcMain.handle('open-downloads-and-close', async () => {
 ipcMain.handle('open-installer', async (event, filePath) => {
   try {
     await shell.openPath(filePath);
+    
+    // Close the app after a short delay to ensure installer opens
+    setTimeout(() => {
+      app.quit();
+    }, 500);
+    
     return { success: true };
   } catch (error) {
     console.error('Error opening installer:', error);
