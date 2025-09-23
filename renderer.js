@@ -1,7 +1,7 @@
 // ===== UI VERSION IDENTIFIER =====
 // This constant identifies the version of this UI file
 // It should be updated whenever this file is modified for OTA updates
-const THIS_UI_VERSION = '1.6.7';
+const THIS_UI_VERSION = '1.6.8';
 // ===================================
 
 // Excel functionality removed - keeping for UI compatibility
