@@ -397,10 +397,6 @@ def addDuration():
     except Exception as e:
         fatal(f"addDuration() - Fatal error - {e}")
         
-        
-    
-   
-    
 
 
 #
@@ -599,11 +595,6 @@ path()  #gets the file path for the Excel file
 if path != "":  #if path exists
     print(getInitNotes())
     
-# =============================================================================
-#     writeCell(148,3,"22/09/2025")
-#     #print(readCell(148,3))
-#     print(readDate(148))
-# =============================================================================
     addDate()
     addAcadYear()
     addLocation()
