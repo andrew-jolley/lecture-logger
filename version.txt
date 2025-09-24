@@ -1,14 +1,22 @@
-Latest_Version: 2.6.0
-Download_Link_Mac: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.6.0/Lecture.Logger-2.6.0-arm64.dmg
-Download_Link_Win: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.6.0/Lecture.Logger.Setup.2.6.0.exe
+Latest_Version: 2.5.8
+Download_Link_Mac: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.5.0a/Lecture.Logger-2.5.8-arm64.dmg
+Download_Link_Win: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.5.0a/Lecture.Logger.Setup.2.5.8.exe
 Release_Notes:
 🎨 **NEW: Over-The-Air UI Updates** - Interface automatically updates without fully updating the app
-� **Excel Integration Complete** - Full Excel processing capabilities with robust Python backend (credits: Liam Shadwell)
-�📱 **Self-Identifying UI System** - Seamless version tracking with embedded UI version constants
+📱 **Self-Identifying UI System** - Seamless version tracking with embedded UI version constants
 🔄 **Automatic Update Checking** - Intelligent startup scanning for both app and UI updates
+💾 **Smart Caching System** - Local UI cache with automatic download and version management
+🔔 **Subtle Refresh Notifications** - Non-intrusive update prompts with one-click app restart
+🎯 **Enhanced About Modal** - Larger title with comprehensive acknowledgements and system info
+📋 **Improved Release Notes** - All versions displayed with newest first, older in collapsible accordion
+🛠️ **Advanced Developer Tools** - Complete UI management with cache clearing and update testing
+⚡ **Startup Auto-Updates** - Configurable automatic UI update checking on app launch
+🎪 **Consistent UI Versioning** - HTML meta tags and JavaScript constants ensure version integrity
+🔧 **Robust Error Handling** - Graceful fallbacks when GitHub CDN or cache operations fail
+✨ **Enhanced Visual Feedback** - Improved success/error alerts with better styling and timing
 
 This major release introduces a revolutionary Over-The-Air (OTA) UI Update System that allows the interface to update independently of the main application. Users can now receive UI improvements, bug fixes, and new features instantly without reinstalling the entire app.
 
-The Excel integration system is now fully operational with robust Python backend processing, providing seamless lecture logging directly to Excel spreadsheets. Special thanks to Liam Shadwell for developing the comprehensive Python backend and Excel integration capabilities.
+Key highlights include intelligent automatic update checking on startup, smart local caching for offline reliability, subtle notification system for seamless user experience, and comprehensive developer tools for advanced users.
 
-Key highlights include intelligent automatic update checking on startup, smart local caching for offline reliability, subtle notification system for seamless user experience, comprehensive developer tools for advanced users, and cross-platform Python runtime with embedded distributions for Windows and intelligent system detection for macOS/Linux.
+The enhanced About modal features a larger title design with acknowledgements, while the release notes system now displays all versions with an elegant collapsible interface for older releases.

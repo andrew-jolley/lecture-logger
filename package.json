@@ -1,16 +1,14 @@
 {
   "name": "lecture-logger",
-  "version": "2.6.0",
-  "buildNumber": "20250924.327",
-  "uiVersion": "2.0.0",
+  "version": "2.5.8",
+  "buildNumber": "20250923.115",
+  "uiVersion": "1.6.9",
   "description": "An app to log lectures into an Excel spreadsheet",
-  "author": "Andrew Jolley <andrew@jolley.dev> (UI/Frontend), Liam Shadwell (Python Backend)",
+  "author": "Andrew Jolley",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "clean": "rm -rf dist/",
-    "setup-python": "node scripts/setup-multiplatform-python.js",
-    "predist": "npm run setup-python",
     "dist": "npm run clean && electron-builder -mw --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
     "dist:mac": "npm run clean && electron-builder --mac --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
     "dist:win": "npm run clean && electron-builder --win --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
@@ -34,20 +32,9 @@
       "index.html",
       "main.js",
       "renderer.js",
-      "package.json",
-      "python/**/*",
-      "!python/electron_settings.json"
+      "package.json"
     ],
-    "extraFiles": [
-      {
-        "from": "python-runtime",
-        "to": "python-runtime",
-        "filter": ["**/*"]
-      }
-    ],
-    "asarUnpack": [
-      "python-runtime/**/*"
-    ],
+    "extraFiles": [],
     "compression": "maximum",
     "removePackageScripts": true,
     "removePackageKeywords": true,
@@ -61,10 +48,6 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64"]
-        },
-        {
-          "target": "pkg",
           "arch": ["arm64"]
         }
       ],
