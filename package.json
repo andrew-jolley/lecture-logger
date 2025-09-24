@@ -55,7 +55,21 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "allowElevation": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": false,
+      "menuCategory": false,
+      "artifactName": "${productName}.Setup.${version}.exe",
+      "uninstallDisplayName": "${productName}",
+      "include": "installer-script.nsh",
+      "installerHeaderIcon": null,
+      "uninstallerIcon": null,
+      "warningsAsErrors": false,
+      "displayLanguageSelector": false,
+      "installerLanguages": ["en_US"],
+      "packElevateHelper": true
     },
     "mac": {
       "target": [

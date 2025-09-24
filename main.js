@@ -367,7 +367,31 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin') {
+    // Ensure all processes are cleaned up before quitting
+    process.exit(0);
+  }
+});
+
+// Handle app termination more gracefully
+app.on('before-quit', (event) => {
+  console.log('App is about to quit, cleaning up...');
+  
+  // Force close any lingering processes
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.destroy();
+  }
+});
+
+// Handle unexpected shutdowns
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down gracefully...');
+  app.quit();
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT, shutting down gracefully...');
+  app.quit();
 });
 
 // Security: Prevent new window creation
@@ -544,8 +568,17 @@ ipcMain.handle('python-bridge', async (event, command, data = null) => {
     
     let pythonScriptPath;
     if (pythonExePath !== 'python3') {
-      // Extract the runtime directory from the python executable path
-      const runtimeDir = path.dirname(path.dirname(pythonExePath)); // Remove /bin/python3 to get runtime dir
+      // Determine script path based on platform and python executable location
+      let runtimeDir;
+      
+      if (os.platform() === 'win32') {
+        // On Windows, python.exe is directly in the runtime directory
+        runtimeDir = path.dirname(pythonExePath);
+      } else {
+        // On macOS/Linux, python3 is in bin/ subdirectory
+        runtimeDir = path.dirname(path.dirname(pythonExePath)); // Remove /bin/python3 to get runtime dir
+      }
+      
       pythonScriptPath = path.join(runtimeDir, 'electron_bridge.py');
     } else {
       // Development fallback
@@ -553,10 +586,14 @@ ipcMain.handle('python-bridge', async (event, command, data = null) => {
     }
     
     console.log('Python script path:', pythonScriptPath);
+    console.log('Python executable path:', pythonExePath);
+    console.log('Platform:', os.platform());
     
     // Log the Python script path to debug file
     try {
       const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
+      fs.appendFileSync(debugPath, `Platform: ${os.platform()}\n`);
+      fs.appendFileSync(debugPath, `Python executable path: ${pythonExePath}\n`);
       fs.appendFileSync(debugPath, `Python script path: ${pythonScriptPath}\n`);
       fs.appendFileSync(debugPath, `Script exists: ${fs.existsSync(pythonScriptPath)}\n\n`);
     } catch (e) {
