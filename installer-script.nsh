@@ -3,8 +3,26 @@
 
 !include "MUI2.nsh"
 
-; Function to kill processes using taskkill command
+; Function to kill processes using taskkill command (for installer)
 Function KillLectureLoggerProcesses
+  DetailPrint "Checking for running Lecture Logger processes..."
+  
+  ; Kill Lecture Logger processes using taskkill
+  nsExec::ExecToLog 'taskkill /F /IM "Lecture Logger.exe" /T'
+  Pop $0 ; Get return code (0 = success, 128 = not found, other = error)
+  
+  ; Kill any lingering electron processes that might be from our app
+  nsExec::ExecToLog 'taskkill /F /IM "electron.exe" /T'
+  Pop $0
+  
+  ; Wait a moment for processes to terminate
+  Sleep 2000
+  
+  DetailPrint "Process cleanup completed."
+FunctionEnd
+
+; Function to kill processes using taskkill command (for uninstaller)
+Function un.KillLectureLoggerProcesses
   DetailPrint "Checking for running Lecture Logger processes..."
   
   ; Kill Lecture Logger processes using taskkill
@@ -30,7 +48,7 @@ FunctionEnd
 ; Custom pre-uninstall function  
 !macro customUnInit
   DetailPrint "Preparing uninstallation..."
-  Call KillLectureLoggerProcesses
+  Call un.KillLectureLoggerProcesses
 !macroend
 
 ; Custom install mode
