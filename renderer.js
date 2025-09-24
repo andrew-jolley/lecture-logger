@@ -1,11 +1,11 @@
 // ===== UI VERSION IDENTIFIER =====
 // This constant identifies the version of this UI file
 // It should be updated whenever this file is modified for OTA updates
-const THIS_UI_VERSION = '1.6.9';
+const THIS_UI_VERSION = '2.0.0';
 // ===================================
 
-// Excel functionality removed - keeping for UI compatibility
-// const Excel = require('exceljs');
+// Excel processing handled by Python backend via electron_bridge.py
+// ExcelJS kept as dependency for potential future features
 const fs = require('fs');
 const path = require('path');
 const os = require('os'); // For cross-platform home directory
@@ -1341,7 +1341,10 @@ function rotateLogFile() {
 
 // Map of module codes → knowledge codes
 const moduleKnowledgeMap = {
-  "N/A": "N/A",
+  "Not Applicable": "N/A",
+  "DIG4142": "K2, S2",
+  "CMP4267": "K5, S3",
+  "ENG4099": "K1, K2, K6",
   "DIG4143": "K1, K2, K8, S2",
   "CMP4286": "K4, K5, S3",
   "ENG4098": "K6, S2",
@@ -1392,16 +1395,13 @@ document.getElementById('completed').addEventListener('change', function() {
   }
 });
 
-// Lecture form submission - dummy version (no Excel functionality)
+// Lecture form submission - Python integration
 document.getElementById('lecture-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  logVerbose('info', 'Form submission started (dummy mode)');
+  logVerbose('info', 'Form submission started (Python mode)');
 
-  // Keep file path for UI compatibility
-  const currentFilePath = appSettings.excelPath || defaultFilePath;
-
-  // Collect form data but don't save to Excel
+  // Collect form data for Python processing
   const date = document.getElementById('date').value;
   const location = document.getElementById('location').value;
   const type = document.getElementById('type').value;
@@ -1410,57 +1410,70 @@ document.getElementById('lecture-form').addEventListener('submit', async (e) => 
   const description = document.getElementById('description').value;
   const next = document.getElementById('next').value;
   const length = document.getElementById('length').value;
-  const completed = document.getElementById('completed').value;
-  
-  // Handle outside working hours logic
-  let assessment;
-  if (completed === 'Yes') {
-    assessment = 'Not Applicable';
-  } else {
-    assessment = document.getElementById('assessment').value;
-  }
 
   // Format date dd/mm/yyyy
   const d = new Date(date);
   const formattedDate = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 
-  // Academic year yy/yy
-  const academicYear = (d.getMonth()+1 >= 9)
-    ? `${d.getFullYear().toString().slice(-2)}/${(d.getFullYear()+1).toString().slice(-2)}`
-    : `${(d.getFullYear()-1).toString().slice(-2)}/${d.getFullYear().toString().slice(-2)}`;
-
-  const knowledgeCode = moduleKnowledgeMap[module] || "AUTO";
-
-  // Store form data as variables (not saved to Excel)
-  const formData = {
+  // Prepare data for Python bridge
+  const pythonData = {
     date: formattedDate,
-    academicYear,
-    location,
-    type,
-    module,
-    summary,
-    description,
-    knowledgeCode,
-    next,
-    length: Number(length),
-    completed,
-    assessment,
-    filePath: currentFilePath
+    location: location,
+    activityType: type,
+    moduleCode: module,
+    description: summary,
+    details: description,
+    nextSteps: next,
+    duration: parseFloat(length)
   };
   
-  logBasic('info', 'Lecture entry collected (dummy mode)', formData);
-  logVerbose('debug', 'Form data processed (dummy mode)', formData);
-
-  // Show success notification (dummy)
-  const fileName = path.basename(currentFilePath);
-  showSuccessAlert(
-    `Lecture entry collected successfully!`,
-    `Data saved as variables (Excel functionality disabled)`
-  );
+  logBasic('info', 'Sending data to Python bridge', pythonData);
   
-  // Clear the form for next entry
-  document.getElementById('lecture-form').reset();
-  document.getElementById('date').valueAsDate = new Date();
+  // Show loading state
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '🔄 Processing...';
+  
+  try {
+    // Call Python bridge to process data
+    const result = await callPythonBridge('process_data', pythonData);
+    
+    if (result.success) {
+      logBasic('info', 'Python processing successful', result.data);
+      
+      // Extract row number from the response
+      const rowNumber = result.data?.row || 'unknown';
+      
+      showSuccessAlert(
+        `Lecture entry saved successfully!`,
+        `Data written to Excel at row ${rowNumber}`
+      );
+      
+      // Clear the form for next entry
+      document.getElementById('lecture-form').reset();
+      document.getElementById('date').valueAsDate = new Date();
+      
+    } else {
+      logBasic('error', 'Python processing failed', result.error);
+      
+      showErrorAlert(
+        `Failed to save lecture entry`,
+        `Python error: ${result.error}`
+      );
+    }
+  } catch (error) {
+    logBasic('error', 'Form submission error', error.message);
+    
+    showErrorAlert(
+      `Form submission failed`,
+      `Error: ${error.message}`
+    );
+  } finally {
+    // Restore submit button
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
 });
 
 // Load settings from localStorage or show setup modal
@@ -1713,6 +1726,122 @@ function getStatusBadgeClass(state) {
   }
 }
 
+// Python Integration Variables
+let pythonDropdownOptions = null;
+let pythonDebugLogs = [];
+
+// Python integration functions
+async function callPythonBridge(command, data = null) {
+  try {
+    const result = await ipcRenderer.invoke('python-bridge', command, data);
+    
+    // Log the operation
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      command,
+      data,
+      result: result.success ? result.data : result.error,
+      success: result.success
+    };
+    pythonDebugLogs.push(logEntry);
+    
+    // Keep only last 50 logs
+    if (pythonDebugLogs.length > 50) {
+      pythonDebugLogs.shift();
+    }
+    
+    return result;
+  } catch (error) {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      command,
+      data,
+      result: error.message,
+      success: false
+    };
+    pythonDebugLogs.push(logEntry);
+    
+    return { success: false, error: error.message };
+  }
+}
+
+async function loadPythonDropdownOptions() {
+  try {
+    const result = await callPythonBridge('get_options');
+    
+    if (result.success) {
+      pythonDropdownOptions = result.data;
+      populateDropdowns();
+      return true;
+    } else {
+      console.error('Failed to load Python options:', result.error);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error loading Python options:', error);
+    return false;
+  }
+}
+
+function populateDropdowns() {
+  if (!pythonDropdownOptions) return;
+  
+  // Populate location dropdown
+  const locationSelect = document.getElementById('location');
+  if (locationSelect) {
+    locationSelect.innerHTML = '<option value="">Select a location...</option>';
+    pythonDropdownOptions.locations.forEach(location => {
+      const option = document.createElement('option');
+      option.value = location;
+      option.textContent = location;
+      locationSelect.appendChild(option);
+    });
+  }
+  
+  // Populate activity type dropdown
+  const typeSelect = document.getElementById('type');
+  if (typeSelect) {
+    typeSelect.innerHTML = '<option value="">Select a type...</option>';
+    pythonDropdownOptions.activityTypes.forEach(type => {
+      const option = document.createElement('option');
+      option.value = type;
+      option.textContent = type;
+      typeSelect.appendChild(option);
+    });
+  }
+  
+  // Populate module code dropdown
+  const moduleSelect = document.getElementById('module');
+  if (moduleSelect) {
+    moduleSelect.innerHTML = '<option value="">Select a module...</option>';
+    pythonDropdownOptions.moduleCodes.forEach(module => {
+      const option = document.createElement('option');
+      option.value = module;
+      option.textContent = module;
+      moduleSelect.appendChild(option);
+    });
+  }
+  
+  logBasic('info', 'Dropdown options populated from Python');
+}
+
+async function savePythonSettings() {
+  try {
+    const settings = {
+      excelPath: appSettings.excelPath,
+      startingRow: appSettings.startingRow,
+      verboseLogging: appSettings.verboseLogging,
+      timestamp: new Date().toISOString()
+    };
+    
+    const result = await ipcRenderer.invoke('save-python-settings', settings);
+    return result.success;
+  } catch (error) {
+    console.error('Error saving Python settings:', error);
+    return false;
+  }
+}
+
 // Show settings modal on first run
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize cache directory first
@@ -1749,6 +1878,15 @@ document.addEventListener('DOMContentLoaded', async function() {
   } else if (isDevelopment) {
     console.log('Development mode - skipping UI update checks');
   }
+  
+  // Load Python dropdown options
+  await loadPythonDropdownOptions();
+  
+  // Save Python settings for bridge communication
+  await savePythonSettings();
+  
+
+  
   // Only log if verbose logging is enabled (check after loading settings)
   
   if (!loadSettings()) {
@@ -1774,56 +1912,71 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Check version and show release notes if updated
   checkVersionAndShowReleaseNotes();
   
-  // Header click handling for developer access - attach to the h3 title specifically
-  let clickCount = 0;
-  let clickTimer = null;
-  
-  // Create a more specific click handler that works on the title text
-  const headerTitle = document.querySelector('#headerBar h3');
-  if (headerTitle) {
-    headerTitle.style.cursor = 'default';
-    headerTitle.addEventListener('click', function(event) {
-      clickCount++;
-      console.log('Header title clicked, count:', clickCount);
+  // Developer Mode button handler - use event delegation for reliability
+  document.addEventListener('click', function(event) {
+    if (event.target && event.target.id === 'developerModeBtn') {
+      console.log('Developer Mode button clicked');
+      event.preventDefault();
+      event.stopPropagation();
       
-      if (clickTimer) {
-        clearTimeout(clickTimer);
+      // Close the About Us modal first
+      const aboutModal = bootstrap.Modal.getInstance(document.getElementById('aboutModal'));
+      if (aboutModal) {
+        aboutModal.hide();
+        console.log('About modal closed');
       }
       
-      clickTimer = setTimeout(() => {
-        console.log('Timer fired, final count:', clickCount);
-        if (clickCount === 4) {
-          console.log('Showing developer access modal');
-          // Show developer access modal
-          showDeveloperAccessModal();
-        }
-        clickCount = 0;
-      }, 500); // Reset after 500ms
-    });
-  }
-  
-  // Also keep the original header click handler as backup
-  document.getElementById('headerBar').addEventListener('click', function(event) {
-    // Only count clicks if not on buttons
-    if (event.target.id !== 'devSettingsBtn' && event.target.id !== 'infoBtn') {
-      clickCount++;
-      console.log('Header clicked, count:', clickCount);
-      
-      if (clickTimer) {
-        clearTimeout(clickTimer);
-      }
-      
-      clickTimer = setTimeout(() => {
-        console.log('Timer fired, final count:', clickCount);
-        if (clickCount === 4) {
-          console.log('Showing developer access modal');
-          // Show developer access modal
-          showDeveloperAccessModal();
-        }
-        clickCount = 0;
-      }, 500); // Reset after 500ms
+      // Show the developer access modal with password prompt
+      setTimeout(() => {
+        console.log('Attempting to show developer access modal');
+        showDeveloperAccessModal();
+      }, 300); // Small delay to allow About modal to close
     }
   });
+  
+  // Also add direct event listener when DOM is ready - backup method
+  setTimeout(() => {
+    const devModeBtn = document.getElementById('developerModeBtn');
+    const aboutModal = document.getElementById('aboutModal');
+    console.log('🔍 DOM Check:', {
+      devModeBtn: devModeBtn,
+      aboutModal: aboutModal,
+      showDeveloperAccessModal: typeof showDeveloperAccessModal
+    });
+    
+    if (devModeBtn) {
+      console.log('✅ Developer Mode button found, attaching direct event listener');
+      
+      devModeBtn.addEventListener('click', function(e) {
+        console.log('🔧 Developer Mode button clicked (direct listener)', e);
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Close the About Us modal first
+        const aboutModal = bootstrap.Modal.getInstance(document.getElementById('aboutModal'));
+        console.log('About modal instance:', aboutModal);
+        if (aboutModal) {
+          aboutModal.hide();
+        }
+        // Show the developer access modal with password prompt
+        setTimeout(() => {
+          console.log('Calling showDeveloperAccessModal...');
+          if (typeof showDeveloperAccessModal === 'function') {
+            showDeveloperAccessModal();
+          } else {
+            console.error('showDeveloperAccessModal is not a function');
+          }
+        }, 300);
+      });
+    } else {
+      console.error('❌ Developer Mode button not found in DOM');
+      // Let's see what buttons ARE in the modal
+      const modalFooter = document.querySelector('#aboutModal .modal-footer');
+      if (modalFooter) {
+        console.log('Modal footer buttons:', modalFooter.innerHTML);
+      }
+    }
+  }, 2000); // Increased delay to ensure modal is fully loaded
   
   // Dev button to trigger settings modal - moved inside DOMContentLoaded to ensure element exists
   const devSettingsBtn = document.getElementById('devSettingsBtn');
@@ -1993,11 +2146,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
                 <hr>
                 <div class="mb-3">
-                  <p class="mb-2"><strong>🎓 Acknowledgements:</strong></p>
-                  <p class="small text-muted mb-1">Built with Electron framework for cross-platform compatibility</p>
-                  <p class="small text-muted mb-1">Bootstrap for modern UI components and responsive design</p>
-                  <p class="small text-muted mb-1">ExcelJS library for spreadsheet integration functionality</p>
-                  <p class="small text-muted mb-0">GitHub for version control, hosting, and OTA update distribution</p>
+                  <p class="mb-2"><strong>👥 Authors:</strong></p>
+                  <p class="small text-muted mb-1">🎨 <strong>UI Design & Frontend:</strong> Andrew Jolley</p>
+                  <p class="small text-muted mb-2">🐍 <strong>Python Backend & Excel Integration:</strong> Liam Shadwell</p>
+                  
+                  <p class="mb-2"><strong>🛠️ Built With:</strong></p>
+                  <p class="small text-muted mb-1">⚡ Electron framework for cross-platform desktop apps</p>
+                  <p class="small text-muted mb-1">🎨 Bootstrap for modern UI components & responsive design</p>
+                  <p class="small text-muted mb-1">🐍 Python + OpenPyXL for robust Excel processing</p>
+                  <p class="small text-muted mb-1">📊 Embedded Python runtime for zero-setup experience</p>
+                  <p class="small text-muted mb-0">🚀 GitHub for version control & OTA update distribution</p>
                 </div>
               `;
             }
@@ -2127,6 +2285,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     if (excelPath && startingRow) {
       await saveSettings(excelPath, startingRow, verboseLogging, autoUpdateCheck, enableOTA, appSettings.testVersion || '');
+      
+      // Sync settings to Python bridge
+      await savePythonSettings();
       
       // Close the modal - try multiple methods to ensure it closes
       const modalEl = document.getElementById('settingsModal');
@@ -2568,6 +2729,253 @@ document.addEventListener('DOMContentLoaded', async function() {
       logBasic('info', 'User declined OTA update, files remain uncached');
     });
   }
+
+  // Python Integration Event Handlers
+  
+  // Test Python Connection
+  const testPythonBtn = document.getElementById('testPythonBtn');
+  if (testPythonBtn) {
+    testPythonBtn.addEventListener('click', async function() {
+      const statusDiv = document.getElementById('pythonStatusDisplay');
+      const originalText = this.innerHTML;
+      
+      try {
+        this.disabled = true;
+        this.innerHTML = '🔗 Testing...';
+        if (statusDiv) statusDiv.innerHTML = 'Testing Python connection...';
+        
+        const result = await callPythonBridge('test_connection');
+        
+        if (result.success) {
+          if (statusDiv) statusDiv.innerHTML = '<span class="text-success">✅ Python connected successfully</span>';
+          logBasic('info', 'Python connection test successful', result.data);
+        } else {
+          if (statusDiv) statusDiv.innerHTML = `<span class="text-danger">❌ Python connection failed: ${result.error}</span>`;
+          logBasic('error', 'Python connection test failed', result.error);
+        }
+      } catch (error) {
+        if (statusDiv) statusDiv.innerHTML = `<span class="text-danger">❌ Error: ${error.message}</span>`;
+        logBasic('error', 'Python test error', error);
+      } finally {
+        this.disabled = false;
+        this.innerHTML = originalText;
+      }
+    });
+  }
+  
+  // Load Python Options
+  const loadPythonOptionsBtn = document.getElementById('loadPythonOptionsBtn');
+  if (loadPythonOptionsBtn) {
+    loadPythonOptionsBtn.addEventListener('click', async function() {
+      const statusDiv = document.getElementById('pythonStatusDisplay');
+      const originalText = this.innerHTML;
+      
+      try {
+        this.disabled = true;
+        this.innerHTML = '📋 Loading...';
+        if (statusDiv) statusDiv.innerHTML = 'Loading Python options...';
+        
+        const success = await loadPythonDropdownOptions();
+        
+        if (success) {
+          if (statusDiv) statusDiv.innerHTML = '<span class="text-success">✅ Options loaded and dropdowns updated</span>';
+          logBasic('info', 'Python options loaded successfully');
+        } else {
+          if (statusDiv) statusDiv.innerHTML = '<span class="text-danger">❌ Failed to load Python options</span>';
+          logBasic('error', 'Failed to load Python options');
+        }
+      } catch (error) {
+        if (statusDiv) statusDiv.innerHTML = `<span class="text-danger">❌ Error: ${error.message}</span>`;
+        logBasic('error', 'Python options error', error);
+      } finally {
+        this.disabled = false;
+        this.innerHTML = originalText;
+      }
+    });
+  }
+  
+  // Python Debug Modal
+  const pythonDebugBtn = document.getElementById('pythonDebugBtn');
+  if (pythonDebugBtn) {
+    pythonDebugBtn.addEventListener('click', function() {
+      // Close the developer modal first to prevent overlap
+      const developerModal = bootstrap.Modal.getInstance(document.getElementById('developerModal'));
+      if (developerModal) {
+        developerModal.hide();
+      }
+      
+      // Small delay to allow developer modal to close before opening Python debug
+      setTimeout(() => {
+        const modal = new bootstrap.Modal(document.getElementById('pythonDebugModal'));
+        modal.show();
+      }, 300);
+    });
+  }
+  
+  // Python Debug Modal Event Handlers
+  const refreshPythonStatusBtn = document.getElementById('refreshPythonStatusBtn');
+  if (refreshPythonStatusBtn) {
+    refreshPythonStatusBtn.addEventListener('click', async function() {
+      const content = document.getElementById('pythonStatusContent');
+      const originalText = this.innerHTML;
+      
+      try {
+        this.disabled = true;
+        this.innerHTML = '🔄 Loading...';
+        
+        const result = await callPythonBridge('test_connection');
+        
+        if (result.success) {
+          const data = result.data;
+          content.innerHTML = `
+            <div class="row">
+              <div class="col-md-6">
+                <div class="card border-success">
+                  <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">🐍 Python Environment</h6>
+                  </div>
+                  <div class="card-body">
+                    <p><strong>Python Version:</strong><br><code>${data.python_version}</code></p>
+                    <p><strong>Working Directory:</strong><br><code>${data.working_directory}</code></p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card border-info">
+                  <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">⚙️ Settings Status</h6>
+                  </div>
+                  <div class="card-body">
+                    <p><strong>Settings Loaded:</strong> <span class="badge ${data.settings_loaded ? 'bg-success' : 'bg-warning'}">${data.settings_loaded ? 'Yes' : 'No'}</span></p>
+                    <p><strong>Excel Path:</strong><br><code>${data.excel_path}</code></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          content.innerHTML = `
+            <div class="alert alert-danger">
+              <h6>❌ Python Connection Failed</h6>
+              <p>${result.error}</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        content.innerHTML = `
+          <div class="alert alert-danger">
+            <h6>❌ Error</h6>
+            <p>${error.message}</p>
+          </div>
+        `;
+      } finally {
+        this.disabled = false;
+        this.innerHTML = originalText;
+      }
+    });
+  }
+  
+  // Load Options in Debug Modal
+  const loadOptionsBtn = document.getElementById('loadOptionsBtn');
+  if (loadOptionsBtn) {
+    loadOptionsBtn.addEventListener('click', async function() {
+      const content = document.getElementById('pythonOptionsContent');
+      const originalText = this.innerHTML;
+      
+      try {
+        this.disabled = true;
+        this.innerHTML = '📋 Loading...';
+        
+        const result = await callPythonBridge('get_options');
+        
+        if (result.success) {
+          const options = result.data;
+          content.innerHTML = `
+            <div class="row">
+              <div class="col-md-4">
+                <h6>📍 Locations (${options.locations.length})</h6>
+                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                  ${options.locations.map(loc => `<div class="small">${loc}</div>`).join('')}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h6>📚 Activity Types (${options.activityTypes.length})</h6>
+                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                  ${options.activityTypes.map(type => `<div class="small">${type}</div>`).join('')}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h6>🎓 Module Codes (${options.moduleCodes.length})</h6>
+                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                  ${options.moduleCodes.map(mod => `<div class="small">${mod}</div>`).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          content.innerHTML = `
+            <div class="alert alert-danger">
+              <h6>❌ Failed to Load Options</h6>
+              <p>${result.error}</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        content.innerHTML = `
+          <div class="alert alert-danger">
+            <h6>❌ Error</h6>
+            <p>${error.message}</p>
+          </div>
+        `;
+      } finally {
+        this.disabled = false;
+        this.innerHTML = originalText;
+      }
+    });
+  }
+  
+  // Python Logs Display
+  const clearPythonLogsBtn = document.getElementById('clearPythonLogsBtn');
+  if (clearPythonLogsBtn) {
+    clearPythonLogsBtn.addEventListener('click', function() {
+      pythonDebugLogs.length = 0;
+      const content = document.getElementById('pythonLogsContent');
+      content.innerHTML = '<div class="text-center text-muted"><p>Logs cleared</p></div>';
+    });
+  }
+  
+  // Function to update Python logs display when modal is shown
+  function updatePythonLogsDisplay() {
+    const content = document.getElementById('pythonLogsContent');
+    if (pythonDebugLogs.length === 0) {
+      content.innerHTML = '<div class="text-center text-muted"><p>No Python operations logged yet</p></div>';
+      return;
+    }
+    
+    const logsHtml = pythonDebugLogs.slice(-20).reverse().map(log => {
+      const timestamp = new Date(log.timestamp).toLocaleTimeString();
+      const statusBadge = log.success 
+        ? '<span class="badge bg-success">Success</span>' 
+        : '<span class="badge bg-danger">Error</span>';
+      
+      return `
+        <div class="border-bottom pb-2 mb-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">${timestamp}</small>
+            ${statusBadge}
+          </div>
+          <div><strong>Command:</strong> <code>${log.command}</code></div>
+          ${log.data ? `<div><strong>Data:</strong> <small>${JSON.stringify(log.data, null, 2).substring(0, 100)}...</small></div>` : ''}
+          <div><strong>Result:</strong> <small>${typeof log.result === 'object' ? JSON.stringify(log.result, null, 2).substring(0, 200) : log.result}...</small></div>
+        </div>
+      `;
+    }).join('');
+    
+    content.innerHTML = logsHtml;
+  }
+  
+  // Update logs when Python logs tab is shown
+  document.getElementById('python-logs-tab').addEventListener('shown.bs.tab', updatePythonLogsDisplay);
 
   // Update modal event handlers
   document.getElementById('skipUpdateBtn').addEventListener('click', function() {

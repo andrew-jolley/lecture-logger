@@ -1,0 +1,15 @@
+#!/bin/bash
+# macOS Python finder for Lecture Logger
+export PYTHONPATH="$PYTHONPATH:$(dirname "$0")"
+
+# Try to find and use system Python with openpyxl auto-install
+for py_cmd in python3 python; do
+    if command -v "$py_cmd" >/dev/null 2>&1; then
+        # Try to install openpyxl if missing
+        "$py_cmd" -c "import openpyxl" 2>/dev/null || "$py_cmd" -m pip install --user openpyxl 2>/dev/null
+        exec "$py_cmd" "$@"
+    fi
+done
+
+echo "❌ Python not found! Install from: https://www.python.org/downloads/"
+exit 1
