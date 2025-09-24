@@ -1,7 +1,7 @@
 // ===== UI VERSION IDENTIFIER =====
 // This constant identifies the version of this UI file
 // It should be updated whenever this file is modified for OTA updates
-const THIS_UI_VERSION = '2.0.0';
+const THIS_UI_VERSION = '2.0.1';
 // ===================================
 
 // Excel processing handled by Python backend via electron_bridge.py
@@ -216,11 +216,11 @@ function showErrorAlert(message, details = '') {
 const defaultFilePath = path.join(os.homedir(), 'Documents', 'OTJ log v4 Broadcast _ Media Systems Engineer.xlsx');
 
 // Update checking constants
-const UPDATE_CHECK_URL = 'https://raw.githubusercontent.com/andrew-jolley/lecture-logger/refs/heads/main/version.txt';
+const UPDATE_CHECK_URL = 'https://raw.githubusercontent.com/andrew-jolley/lecture-logger/main/version.txt';
 
 // UI OTA Update system
-const UI_VERSION_URL = 'https://raw.githubusercontent.com/andrew-jolley/lecture-logger/refs/heads/main/ui-version.txt';
-const UI_FILES_BASE_URL = 'https://raw.githubusercontent.com/andrew-jolley/lecture-logger/refs/heads/main/ui/';
+const UI_VERSION_URL = 'https://raw.githubusercontent.com/andrew-jolley/lecture-logger/main/ui-version.txt';
+const UI_FILES_BASE_URL = 'https://raw.githubusercontent.com/andrew-jolley/lecture-logger/main/ui/';
 let LOCAL_UI_CACHE_DIR = null; // Will be set via IPC at startup
 
 // Binary version tracking for first launch detection
