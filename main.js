@@ -9,6 +9,92 @@ let mainWindow;
 // UI Cache configuration
 const LOCAL_UI_CACHE_DIR = path.join(app.getPath('cache'), 'LectureLogger-UI');
 
+// Python runtime configuration
+function getEmbeddedPythonPath() {
+  const platform = os.platform();
+  const arch = os.arch();
+  
+  // Map Node.js arch to our naming convention
+  const archMap = {
+    'x64': 'x64',
+    'arm64': 'arm64',
+    'ia32': 'ia32'
+  };
+  
+  const mappedArch = archMap[arch] || 'x64';
+  
+  // Try different potential locations for Python runtime
+  const possiblePaths = [
+    // Development location (npm start)
+    path.join(__dirname, 'python-runtime', `${platform}-${mappedArch}`)
+  ];
+  
+  // Add packaged app paths only if process.resourcesPath is available (Electron context)
+  if (process.resourcesPath) {
+    possiblePaths.push(
+      // Packaged app location: Contents/python-runtime (from Resources/app.asar)
+      path.join(process.resourcesPath, '..', 'python-runtime', `${platform}-${mappedArch}`),
+      // Alternative: Direct path from app bundle
+      path.join(path.dirname(process.resourcesPath), 'python-runtime', `${platform}-${mappedArch}`),
+      // Fallback: Unpacked in Resources
+      path.join(process.resourcesPath, 'python-runtime', `${platform}-${mappedArch}`)
+    );
+  }
+  
+  let pythonExe;
+  let runtimeDir;
+  
+  for (const tryPath of possiblePaths) {
+    console.log(`Checking Python runtime at: ${tryPath}`);
+    
+    // Log to debug file
+    try {
+      const debugPath = path.join(require('os').homedir(), 'lecture-logger-debug.log');
+      require('fs').appendFileSync(debugPath, `Checking: ${tryPath} - Exists: ${fs.existsSync(tryPath)}\n`);
+    } catch (e) {}
+    
+    if (platform === 'win32') {
+      pythonExe = path.join(tryPath, 'python.exe');
+      if (!fs.existsSync(pythonExe)) {
+        pythonExe = path.join(tryPath, 'python.bat');
+      }
+    } else {
+      pythonExe = path.join(tryPath, 'bin', 'python3');
+    }
+    
+    console.log(`Python executable would be: ${pythonExe}`);
+    
+    if (fs.existsSync(pythonExe)) {
+      runtimeDir = tryPath;
+      console.log(`Found working Python at: ${pythonExe}`);
+      break;
+    }
+  }
+  
+  // Check if embedded Python exists and is executable
+  if (runtimeDir && fs.existsSync(pythonExe)) {
+    try {
+      // Check if file is executable (non-Windows)
+      if (platform !== 'win32') {
+        const stats = fs.statSync(pythonExe);
+        if (!(stats.mode & parseInt('111', 8))) {
+          console.log(`Making Python executable: ${pythonExe}`);
+          fs.chmodSync(pythonExe, '755');
+        }
+      }
+      
+      console.log(`Using embedded Python: ${pythonExe}`);
+      return pythonExe;
+    } catch (error) {
+      console.error(`Error accessing Python executable: ${error.message}`);
+    }
+  }
+  
+  // Fallback to system Python
+  console.log('Embedded Python not found, falling back to system python3');
+  return 'python3';
+}
+
 // Function to check if cached UI files should be used
 function shouldUseCachedUI() {
   // In development mode, always use bundled files
@@ -445,4 +531,210 @@ ipcMain.handle('delete-ui-cache', async () => {
 // IPC handler to check if UI files are cached or bundled
 ipcMain.handle('get-ui-source', async () => {
   return shouldUseCachedUI() ? 'cached' : 'bundled';
+});
+
+// Python Integration Handlers
+const { spawn } = require('child_process');
+
+// IPC handler to execute Python bridge commands
+ipcMain.handle('python-bridge', async (event, command, data = null) => {
+  return new Promise((resolve) => {
+    // Get the Python executable path and derive script path from it
+    const pythonExePath = getEmbeddedPythonPath();
+    
+    let pythonScriptPath;
+    if (pythonExePath !== 'python3') {
+      // Extract the runtime directory from the python executable path
+      const runtimeDir = path.dirname(path.dirname(pythonExePath)); // Remove /bin/python3 to get runtime dir
+      pythonScriptPath = path.join(runtimeDir, 'electron_bridge.py');
+    } else {
+      // Development fallback
+      pythonScriptPath = path.join(__dirname, 'python', 'electron_bridge.py');
+    }
+    
+    console.log('Python script path:', pythonScriptPath);
+    
+    // Log the Python script path to debug file
+    try {
+      const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
+      fs.appendFileSync(debugPath, `Python script path: ${pythonScriptPath}\n`);
+      fs.appendFileSync(debugPath, `Script exists: ${fs.existsSync(pythonScriptPath)}\n\n`);
+    } catch (e) {
+      console.log('Could not write script path debug:', e.message);
+    }
+    
+    // Build command arguments
+    const args = [pythonScriptPath, command];
+    if (data) {
+      args.push(JSON.stringify(data));
+    }
+    
+    console.log('Executing Python command:', command, data ? 'with data' : '');
+    console.log('App paths - __dirname:', __dirname);
+    console.log('App paths - process.resourcesPath:', process.resourcesPath || 'undefined');
+    console.log('App paths - process.execPath:', process.execPath);
+    
+    // Determine the best working directory
+    let workingDir = __dirname;
+    
+    // In packaged apps, __dirname is inside app.asar and not accessible
+    // Use the app's main directory instead
+    if (process.resourcesPath && __dirname.includes('app.asar')) {
+      // Use the app bundle's main directory (one level up from Resources)
+      workingDir = path.dirname(process.resourcesPath);
+    }
+
+    // Write debug info to file for troubleshooting
+    try {
+      const debugInfo = `
+=== Python Bridge Debug - ${new Date().toISOString()} ===
+Command: ${command}
+Working Directory: ${workingDir}
+__dirname: ${__dirname}
+process.resourcesPath: ${process.resourcesPath || 'undefined'}
+process.execPath: ${process.execPath}
+Platform: ${os.platform()}
+Arch: ${os.arch()}
+`;
+      const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
+      fs.appendFileSync(debugPath, debugInfo);
+    } catch (e) {
+      console.log('Could not write debug log:', e.message);
+    }
+    
+    const pythonPath = getEmbeddedPythonPath();
+    console.log('Using Python path:', pythonPath);
+    
+    // Log the selected Python path
+    try {
+      const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
+      fs.appendFileSync(debugPath, `Selected Python path: ${pythonPath}\n\n`);
+    } catch (e) {
+      console.log('Could not write Python path debug:', e.message);
+    }
+    
+    // Verify the Python path exists and log details
+    if (pythonPath !== 'python3') {
+      try {
+        const stats = fs.statSync(pythonPath);
+        console.log('Python file stats:', {
+          exists: true,
+          size: stats.size,
+          mode: stats.mode.toString(8),
+          isFile: stats.isFile()
+        });
+      } catch (error) {
+        console.error('Python file check failed:', error.message);
+      }
+    }
+    
+    const pythonProcess = spawn(pythonExePath, args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: workingDir
+    });
+    
+    let stdout = '';
+    let stderr = '';
+    
+    pythonProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+    
+    pythonProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+    
+    pythonProcess.on('close', (code) => {
+      console.log('Python process exit code:', code);
+      
+      if (code === 0 && stdout.trim()) {
+        try {
+          const result = JSON.parse(stdout.trim());
+          resolve({ success: true, data: result });
+        } catch (e) {
+          resolve({ 
+            success: false, 
+            error: 'Failed to parse Python response', 
+            stdout, 
+            stderr 
+          });
+        }
+      } else {
+        resolve({ 
+          success: false, 
+          error: stderr || 'Python process failed', 
+          code, 
+          stdout, 
+          stderr 
+        });
+      }
+    });
+    
+    pythonProcess.on('error', (error) => {
+      console.error('Python process error:', error);
+      
+      // Log detailed error information
+      try {
+        const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
+        fs.appendFileSync(debugPath, `Python process error: ${error.message}\n`);
+        fs.appendFileSync(debugPath, `Error code: ${error.code}\n`);
+        fs.appendFileSync(debugPath, `Python path: ${pythonExePath}\n`);
+        fs.appendFileSync(debugPath, `Script path: ${pythonScriptPath}\n`);
+        fs.appendFileSync(debugPath, `Working dir: ${workingDir}\n`);
+        fs.appendFileSync(debugPath, `Args: ${JSON.stringify(args)}\n\n`);
+      } catch (e) {
+        console.log('Could not write error debug:', e.message);
+      }
+      
+      resolve({ 
+        success: false, 
+        error: `Failed to start Python process: ${error.message} (${error.code})` 
+      });
+    });
+  });
+});
+
+// IPC handler to save settings for Python bridge
+ipcMain.handle('save-python-settings', async (event, settings) => {
+  try {
+    // Determine the correct settings path
+    let settingsPath;
+    
+    if (process.resourcesPath && __dirname.includes('app.asar')) {
+      // Built app: first check if user has existing development settings
+      const devSettingsPath = '/Users/andrewjolley/lecture-logger/python/electron_settings.json';
+      
+      if (fs.existsSync(devSettingsPath)) {
+        // Use existing development settings location
+        settingsPath = devSettingsPath;
+      } else {
+        // Save to app bundle location
+        const appDir = path.dirname(process.resourcesPath);
+        settingsPath = path.join(appDir, 'python', 'electron_settings.json');
+      }
+    } else {
+      // Development: save to the main python directory
+      settingsPath = path.join(__dirname, 'python', 'electron_settings.json');
+    }
+    
+    // Ensure directory exists
+    const settingsDir = path.dirname(settingsPath);
+    if (!fs.existsSync(settingsDir)) {
+      fs.mkdirSync(settingsDir, { recursive: true });
+    }
+    
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+    console.log('Python settings saved:', settingsPath);
+    
+    // Also log to debug file
+    try {
+      const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
+      fs.appendFileSync(debugPath, `Settings saved to: ${settingsPath}\nSettings content: ${JSON.stringify(settings, null, 2)}\n\n`);
+    } catch (e) {}
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving Python settings:', error);
+    return { success: false, error: error.message };
+  }
 });

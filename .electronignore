@@ -1,0 +1,54 @@
+# Build output
+dist/
+build/
+
+# Dependencies - only include what's needed
+node_modules/*
+!node_modules/exceljs
+
+# Development files
+.git*
+.DS_Store
+.vscode/
+.idea/
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Documentation and meta files
+README.md
+LICENSE*
+CHANGELOG.md
+*.md
+docs/
+
+# Package manager files
+yarn.lock
+package-lock.json
+
+# Testing
+test/
+tests/
+spec/
+specs/
+*.test.js
+*.spec.js
+coverage/
+
+# Electron build cache
+.cache
+.temp
+*.cache
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Other unnecessary files
+.npmignore
+.eslintrc*
+.prettierrc*
+tsconfig.json
+webpack.config.js
