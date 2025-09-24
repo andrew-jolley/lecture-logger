@@ -1,7 +1,7 @@
 {
   "name": "lecture-logger",
-  "version": "2.6.0",
-  "buildNumber": "20250924.327",
+  "version": "2.6.1",
+  "buildNumber": "20250924.373",
   "uiVersion": "2.0.1",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley <andrew@jolley.dev> (UI/Frontend), Liam Shadwell (Python Backend)",
@@ -69,7 +69,9 @@
       "warningsAsErrors": false,
       "displayLanguageSelector": false,
       "installerLanguages": ["en_US"],
-      "packElevateHelper": true
+      "packElevateHelper": true,
+      "guid": "a8b7bd78-cfea-5f1f-95a5-6a1b0730475d",
+      "removeDefaultUninstallWelcomePage": false
     },
     "mac": {
       "target": [

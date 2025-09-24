@@ -7,14 +7,49 @@ Accepts JSON input from Electron app and processes it through the OTJ system
 import json
 import sys
 import os
+import subprocess
 from datetime import datetime
 
-# Import required libraries directly instead of from OTJ_Automation
+# Function to install missing packages
+def install_package(package_name):
+    """Install a package using pip"""
+    try:
+        # Try to import first
+        __import__(package_name)
+        return True
+    except ImportError:
+        try:
+            # First, ensure pip is available (especially for Windows embedded Python)
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "--version"])
+            except subprocess.CalledProcessError:
+                # Try to bootstrap pip if get-pip.py is available
+                get_pip_path = os.path.join(os.path.dirname(sys.executable), "get-pip.py")
+                if os.path.exists(get_pip_path):
+                    subprocess.check_call([sys.executable, get_pip_path])
+                else:
+                    print(f"Warning: pip not available and get-pip.py not found")
+                    return False
+            
+            # Install the package
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to install {package_name}: {e}")
+            return False
+
+# Ensure required packages are installed
+required_packages = ["openpyxl"]
+for package in required_packages:
+    if not install_package(package):
+        print(f"Error: Could not install required package: {package}")
+        sys.exit(1)
+
+# Import required libraries after ensuring they're installed
 import warnings
 warnings.simplefilter("ignore", UserWarning)
 
 from openpyxl import load_workbook
-from datetime import datetime
 import time
 
 # Global variables
