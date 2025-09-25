@@ -1,12 +1,7 @@
 {
   "name": "lecture-logger",
-<<<<<<< HEAD
-  "version": "2.6.2",
-  "buildNumber": "20250924.373",
-=======
   "version": "2.6.4",
   "buildNumber": "20250925.529",
->>>>>>> 8813884328ed60acc76e21a4f157fd6551a4c4cd
   "uiVersion": "2.0.1",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley <andrew@jolley.dev> (UI/Frontend), Liam Shadwell (Python Backend)",
@@ -27,11 +22,12 @@
     "list-builds": "node scripts/list-builds.js"
   },
   "dependencies": {
+    "electron-version": "^2.0.1",
     "exceljs": "^4.4.0"
   },
   "devDependencies": {
     "dmg-license": "^1.0.11",
-    "electron": "^31.0.0",
+    "electron": "^38.1.2",
     "electron-builder": "^24.13.3"
   },
   "build": {
@@ -53,7 +49,9 @@
       {
         "from": "python-runtime",
         "to": "python-runtime",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "asarUnpack": [
@@ -79,7 +77,9 @@
       "uninstallerIcon": null,
       "warningsAsErrors": false,
       "displayLanguageSelector": false,
-      "installerLanguages": ["en_US"],
+      "installerLanguages": [
+        "en_US"
+      ],
       "packElevateHelper": true,
       "guid": "a8b7bd78-cfea-5f1f-95a5-6a1b0730475d",
       "removeDefaultUninstallWelcomePage": false
@@ -88,11 +88,15 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         },
         {
           "target": "pkg",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         }
       ],
       "compression": "maximum"
@@ -101,7 +105,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "compression": "maximum",
@@ -113,7 +119,9 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "compression": "maximum"
