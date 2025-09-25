@@ -148,6 +148,10 @@ def addDate():  #function to get the required date from the user
     
     if date == "today":     #user is able to enter 'today' to get the current date
         date = (datetime.now()).strftime("%d/%m/%Y")    #format date as required
+    elif len(date.split("/")) != 3 or len(date.split("/")[2]) != 4 or len(date.split("/")[1]) != 2 or len(date.split("/")[0]) != 2:
+        print("Date is not valid. Must be in form DD/MM/YYYY\n")
+        addDate()
+        return
     
     rowData.append(date)    #add to rowData list
 
@@ -165,13 +169,12 @@ def addAcadYear():  #function to use global data var above and get the current a
         if month >= 9:          #if month is > 9, then the acad year must be the current year
             startYear = year    
         else: 
-            startYear -= 1      #else, the start year must be -1 from the current
+            startYear = year-1    #else, the start year must be -1 from the current
             
         endYear = startYear + 1     #add 1 to the end year to allow for the acad year after the /
         
         rowData.append(f"{startYear}/{endYear}")    #add the academic year to the rowData list 
         log(f"addAcadYear() - Added academic year {startYear}/{endYear} to rowData list.",1)    #add to the log
-        
     
     except ValueError as e:     #if the wrong data type is entered, then state and log
         print("INCORRECT VALUE TYPE")
