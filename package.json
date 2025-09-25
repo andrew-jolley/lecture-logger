@@ -1,26 +1,31 @@
 {
   "name": "lecture-logger",
-  "version": "2.6.1",
-  "buildNumber": "20250924.373",
+  "version": "2.6.4",
+  "buildNumber": "20250925.529",
   "uiVersion": "2.0.1",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley <andrew@jolley.dev> (UI/Frontend), Liam Shadwell (Python Backend)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "clean": "rm -rf dist/",
+    "clean": "node -e \"const fs = require('fs'); if (fs.existsSync('dist')) fs.rmSync('dist', {recursive: true, force: true})\"",
     "setup-python": "node scripts/setup-multiplatform-python.js",
     "predist": "npm run setup-python",
-    "dist": "npm run clean && electron-builder -mw --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
-    "dist:mac": "npm run clean && electron-builder --mac --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
-    "dist:win": "npm run clean && electron-builder --win --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
-    "dist:linux": "npm run clean && electron-builder --linux --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
-    "move-installers": "mkdir -p '/Users/andrewjolley/Setup Files/v$npm_package_version' && find dist/ -name '*.dmg' -exec mv {} '/Users/andrewjolley/Setup Files/v$npm_package_version/' \\; && find dist/ -name '*.exe' -exec mv {} '/Users/andrewjolley/Setup Files/v$npm_package_version/' \\; && find dist/ -name '*.AppImage' -exec mv {} '/Users/andrewjolley/Setup Files/v$npm_package_version/' \\;"
+    "dist": "node scripts/build-helper.js all",
+    "dist:mac": "node scripts/build-helper.js mac",
+    "dist:win": "node scripts/build-helper.js win",
+    "dist:linux": "node scripts/build-helper.js linux",
+    "build": "npm run dist",
+    "build:win": "npm run dist:win",
+    "build:mac": "npm run dist:mac",
+    "build:linux": "npm run dist:linux",
+    "list-builds": "node scripts/list-builds.js"
   },
   "dependencies": {
     "exceljs": "^4.4.0"
   },
   "devDependencies": {
+    "dmg-license": "^1.0.11",
     "electron": "^31.0.0",
     "electron-builder": "^24.13.3"
   },
@@ -36,7 +41,8 @@
       "renderer.js",
       "package.json",
       "python/**/*",
-      "!python/electron_settings.json"
+      "!python/electron_settings.json",
+      "!python-runtime/**/*"
     ],
     "extraFiles": [
       {
@@ -93,7 +99,10 @@
           "arch": ["x64"]
         }
       ],
-      "compression": "maximum"
+      "compression": "maximum",
+      "sign": null,
+      "forceCodeSigning": false,
+      "requestedExecutionLevel": "asInvoker"
     },
     "linux": {
       "target": [

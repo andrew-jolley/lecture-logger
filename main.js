@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 
 let mainWindow;
+let splashWindow;
 
 // UI Cache configuration
 const LOCAL_UI_CACHE_DIR = path.join(app.getPath('cache'), 'LectureLogger-UI');
@@ -158,6 +159,139 @@ function shouldUseCachedUI() {
   }
 }
 
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,
+    alwaysOnTop: true,
+    transparent: false,
+    backgroundColor: '#667eea',
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    show: false,
+    roundedCorners: true
+  });
+
+  // Create splash HTML content
+  const splashHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+        body {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          position: relative;
+        }
+        body::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          border-radius: 15px;
+          background: inherit;
+          z-index: -1;
+        }
+        .splash-container {
+          text-align: center;
+          color: white;
+          z-index: 1;
+        }
+        .logo {
+          font-size: 32px;
+          font-weight: bold;
+          margin-bottom: 25px;
+          text-shadow: 0 3px 6px rgba(0,0,0,0.4);
+          letter-spacing: -0.5px;
+        }
+        .spinner {
+          width: 45px;
+          height: 45px;
+          border: 4px solid rgba(255,255,255,0.2);
+          border-top: 4px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 20px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+          font-size: 16px;
+          opacity: 0.95;
+          font-weight: 500;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="splash-container">
+        <div class="logo">📚 Lecture Logger</div>
+        <div class="spinner"></div>
+        <div class="loading-text">Loading...</div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  splashWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(splashHTML)}`);
+  
+  splashWindow.once('ready-to-show', () => {
+    splashWindow.show();
+    
+    // Try to set rounded corners on Windows
+    if (process.platform === 'win32') {
+      try {
+        const { exec } = require('child_process');
+        // Use Windows DWM API to enable rounded corners (Windows 11)
+        splashWindow.webContents.executeJavaScript(`
+          if (window.navigator.userAgent.includes('Windows NT 10')) {
+            document.body.style.borderRadius = '15px';
+            document.body.style.overflow = 'hidden';
+          }
+        `);
+      } catch (error) {
+        console.log('Could not apply rounded corners:', error.message);
+      }
+    }
+  });
+
+  splashWindow.on('closed', () => {
+    console.log('Splash window closed');
+    splashWindow = null;
+  });
+
+  // Fallback: close splash after 6 seconds if app-ready signal never comes
+  setTimeout(() => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      console.log('Fallback: Closing splash window after timeout');
+      splashWindow.close();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.show();
+      }
+    }
+  }, 6000);
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900,
@@ -173,9 +307,9 @@ function createWindow() {
     menuBarVisible: process.platform !== 'win32' // Show menu bar only on macOS/Linux
   });
 
-  // Show window when ready to prevent flash
+  // Don't show main window until app signals it's ready
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+    console.log('Main window ready, but keeping hidden until app initialization complete');
   });
 
   // Load cached UI files if available, otherwise use bundled files
@@ -359,10 +493,14 @@ async function downloadFile(url, filename) {
 }
 
 app.whenReady().then(() => {
+  createSplashWindow();
   createWindow();
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createSplashWindow();
+      createWindow();
+    }
   });
 });
 
@@ -380,6 +518,15 @@ app.on('before-quit', (event) => {
   // Force close any lingering processes
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.destroy();
+  }
+});
+
+// Handle installer-triggered shutdowns
+app.on('window-all-closed', () => {
+  console.log('All windows closed, quitting application...');
+  // Always quit on Windows when all windows are closed (important for installers)
+  if (process.platform === 'win32') {
+    app.quit();
   }
 });
 
@@ -405,6 +552,8 @@ app.on('web-contents-created', (event, contents) => {
 ipcMain.handle('download-update', async (event, url, filename) => {
   const downloadsPath = path.join(os.homedir(), 'Downloads');
   const filePath = path.join(downloadsPath, filename);
+  
+  console.log('Starting update download:', filename);
   
   // Helper function to handle the actual download with redirect support
   const downloadWithRedirects = (downloadUrl, attempt = 1) => {
@@ -469,6 +618,12 @@ ipcMain.handle('download-update', async (event, url, filename) => {
         
         file.on('finish', () => {
           file.close();
+          console.log('Download completed:', filename);
+          console.log('File exists:', fs.existsSync(filePath));
+          if (fs.existsSync(filePath)) {
+            const stats = fs.statSync(filePath);
+            console.log('File size:', stats.size, 'bytes');
+          }
           event.sender.send('update-download-complete', { filePath, filename });
           resolve(filePath);
         });
@@ -505,15 +660,127 @@ ipcMain.handle('open-downloads-and-close', async () => {
   return true;
 });
 
+// IPC handler to open folder containing a file
+ipcMain.handle('open-folder', async (event, filePath) => {
+  try {
+    const folderPath = path.dirname(filePath);
+    console.log('Opening folder:', folderPath);
+    
+    const result = await shell.openPath(folderPath);
+    
+    if (result !== '') {
+      console.error('shell.openPath failed with result:', result);
+      return { success: false, error: result };
+    }
+    
+    console.log('Successfully opened folder, closing app in 2 seconds...');
+    
+    // Close the app after a short delay to ensure folder opens
+    setTimeout(() => {
+      app.quit();
+    }, 2000);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error opening folder:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// IPC handler to signal app is ready and show main window
+ipcMain.handle('app-ready', async () => {
+  console.log('🚀 App ready signal received');
+  
+  return new Promise((resolve) => {
+    // Show main window first
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      console.log('✅ Showing main window...');
+      mainWindow.show();
+      mainWindow.focus();
+    }
+    
+    // Close splash window with fade effect
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      console.log('🔄 Closing splash window...');
+      
+      // Try fade effect, but don't let it block the process
+      splashWindow.webContents.executeJavaScript(`
+        document.body.style.transition = 'opacity 0.3s ease-out';
+        document.body.style.opacity = '0';
+      `).catch(() => {
+        console.log('⚠️ Fade effect failed, closing splash directly');
+      });
+      
+      // Close splash after short delay regardless of fade
+      setTimeout(() => {
+        if (splashWindow && !splashWindow.isDestroyed()) {
+          console.log('❌ Closing splash window now');
+          splashWindow.close();
+        }
+        resolve(true);
+      }, 300);
+    } else {
+      resolve(true);
+    }
+  });
+});
+
 // IPC handler to open installer file directly
 ipcMain.handle('open-installer', async (event, filePath) => {
   try {
-    await shell.openPath(filePath);
+    console.log('Attempting to open installer at:', filePath);
     
-    // Close the app after a short delay to ensure installer opens
+    // Check if file exists first
+    if (!fs.existsSync(filePath)) {
+      console.error('File does not exist:', filePath);
+      return { success: false, error: `File not found: ${filePath}` };
+    }
+    
+    console.log('File exists, attempting to unblock and open...');
+    
+    // Try to unblock the file first (removes Windows "Mark of the Web")
+    const { exec } = require('child_process');
+    const unblockResult = await new Promise((resolve) => {
+      exec(`powershell -Command "Unblock-File -Path '${filePath}'"`, (error, stdout, stderr) => {
+        if (error) {
+          console.log('Could not unblock file (this is normal for some files):', error.message);
+        } else {
+          console.log('File unblocked successfully');
+        }
+        resolve(!error);
+      });
+    });
+    
+    // On Windows, open the folder containing the installer instead of running it
+    if (process.platform === 'win32') {
+      const folderPath = path.dirname(filePath);
+      console.log('Opening folder on Windows:', folderPath);
+      const result = await shell.openPath(folderPath);
+      
+      if (result !== '') {
+        console.error('shell.openPath failed with result:', result);
+        return { success: false, error: result };
+      }
+      
+      console.log('Successfully opened Downloads folder, closing app in 2 seconds...');
+    } else {
+      // On macOS/Linux, open the installer directly
+      const result = await shell.openPath(filePath);
+      console.log('shell.openPath returned:', result);
+      
+      // shell.openPath returns an empty string on success, error message on failure
+      if (result !== '') {
+        console.error('shell.openPath failed with result:', result);
+        return { success: false, error: result };
+      }
+      
+      console.log('Successfully opened installer, closing app in 2 seconds...');
+    }
+    
+    // Close the app after a short delay to ensure folder/installer opens
     setTimeout(() => {
       app.quit();
-    }, 500);
+    }, 2000);
     
     return { success: true };
   } catch (error) {
@@ -521,6 +788,8 @@ ipcMain.handle('open-installer', async (event, filePath) => {
     return { success: false, error: error.message };
   }
 });
+
+
 
 // IPC handler to restart the app (for UI updates)
 ipcMain.handle('restart-app', async () => {
@@ -736,42 +1005,79 @@ ipcMain.handle('save-python-settings', async (event, settings) => {
   try {
     // Determine the correct settings path
     let settingsPath;
+    const debugLog = [];
     
     if (process.resourcesPath && __dirname.includes('app.asar')) {
       // Built app: first check if user has existing development settings
       const devSettingsPath = '/Users/andrewjolley/lecture-logger/python/electron_settings.json';
+      debugLog.push(`Checking for dev settings at: ${devSettingsPath}`);
       
       if (fs.existsSync(devSettingsPath)) {
         // Use existing development settings location
         settingsPath = devSettingsPath;
+        debugLog.push(`Using existing dev settings`);
       } else {
         // Save to app bundle location
         const appDir = path.dirname(process.resourcesPath);
         settingsPath = path.join(appDir, 'python', 'electron_settings.json');
+        debugLog.push(`Using app bundle settings path`);
       }
     } else {
       // Development: save to the main python directory
       settingsPath = path.join(__dirname, 'python', 'electron_settings.json');
+      debugLog.push(`Using development settings path`);
     }
+    
+    debugLog.push(`Final settings path: ${settingsPath}`);
+    debugLog.push(`Settings to save: ${JSON.stringify(settings, null, 2)}`);
     
     // Ensure directory exists
     const settingsDir = path.dirname(settingsPath);
     if (!fs.existsSync(settingsDir)) {
       fs.mkdirSync(settingsDir, { recursive: true });
+      debugLog.push(`Created settings directory: ${settingsDir}`);
     }
     
+    // Write settings file
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
     console.log('Python settings saved:', settingsPath);
+    debugLog.push('Settings file written successfully');
+    
+    // Verify the file was written correctly
+    if (fs.existsSync(settingsPath)) {
+      const savedContent = fs.readFileSync(settingsPath, 'utf8');
+      const parsedContent = JSON.parse(savedContent);
+      debugLog.push(`Verification: File exists and contains excelPath: ${parsedContent.excelPath}`);
+    } else {
+      debugLog.push('ERROR: Settings file does not exist after writing');
+    }
     
     // Also log to debug file
     try {
       const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
-      fs.appendFileSync(debugPath, `Settings saved to: ${settingsPath}\nSettings content: ${JSON.stringify(settings, null, 2)}\n\n`);
-    } catch (e) {}
+      const timestamp = new Date().toISOString();
+      fs.appendFileSync(debugPath, `\n=== Python Settings Save - ${timestamp} ===\n`);
+      debugLog.forEach(line => fs.appendFileSync(debugPath, `${line}\n`));
+      fs.appendFileSync(debugPath, `=====================================\n\n`);
+    } catch (e) {
+      console.warn('Could not write to debug log:', e.message);
+    }
     
-    return { success: true };
+    return { success: true, path: settingsPath };
   } catch (error) {
     console.error('Error saving Python settings:', error);
+    
+    // Log error to debug file
+    try {
+      const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
+      const timestamp = new Date().toISOString();
+      fs.appendFileSync(debugPath, `\n=== Python Settings Save ERROR - ${timestamp} ===\n`);
+      fs.appendFileSync(debugPath, `Error: ${error.message}\n`);
+      fs.appendFileSync(debugPath, `Stack: ${error.stack}\n`);
+      fs.appendFileSync(debugPath, `Settings attempted: ${JSON.stringify(settings, null, 2)}\n`);
+      fs.appendFileSync(debugPath, `=====================================\n\n`);
+    } catch (e) {}
+    
     return { success: false, error: error.message };
   }
 });
