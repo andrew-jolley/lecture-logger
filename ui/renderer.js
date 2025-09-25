@@ -872,18 +872,27 @@ ipcRenderer.on('update-download-complete', (event, data) => {
     
     // Determine platform-specific button text
     const isMac = process.platform === 'darwin';
-    const buttonText = isMac ? 'Open Installer (DMG)' : 'Open Installer (EXE)';
+    const isWindows = process.platform === 'win32';
+    const buttonText = isMac ? 'Open Installer (DMG)' : (isWindows ? 'Open Downloads Folder' : 'Open Installer (EXE)');
     downloadButton.textContent = buttonText;
     downloadButton.classList.remove('btn-primary');
     downloadButton.classList.add('btn-success');
     
-    // Update click handler to open installer directly
+    // Update click handler to open folder on Windows, installer on other platforms
     downloadButton.onclick = async () => {
-      const result = await ipcRenderer.invoke('open-installer', data.filePath);
-      if (result.success) {
-        showSuccessAlert('Installer opened!', 'Please follow the installation instructions.');
+      let result;
+      if (isWindows) {
+        result = await ipcRenderer.invoke('open-folder', data.filePath);
       } else {
-        showErrorAlert('Failed to open installer', result.error);
+        result = await ipcRenderer.invoke('open-installer', data.filePath);
+      }
+      
+      if (result.success) {
+        const successMessage = isWindows ? 'Downloads folder opened!' : 'Installer opened!';
+        const instructionMessage = isWindows ? 'Run the installer from your Downloads folder.' : 'Please follow the installation instructions.';
+        showSuccessAlert(successMessage, instructionMessage);
+      } else {
+        showErrorAlert(isWindows ? 'Failed to open folder' : 'Failed to open installer', result.error);
       }
     };
   }
@@ -1834,9 +1843,19 @@ async function savePythonSettings() {
       timestamp: new Date().toISOString()
     };
     
+    logVerbose('info', 'Saving Python settings', settings);
+    
     const result = await ipcRenderer.invoke('save-python-settings', settings);
+    
+    if (result.success) {
+      logVerbose('info', 'Python settings saved successfully');
+    } else {
+      logBasic('error', 'Failed to save Python settings', result.error);
+    }
+    
     return result.success;
   } catch (error) {
+    logBasic('error', 'Error saving Python settings', error.message);
     console.error('Error saving Python settings:', error);
     return false;
   }
@@ -2057,6 +2076,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       errorDiv.style.display = 'none';
       pathInput.classList.remove('is-invalid');
       pathInput.classList.add('is-valid');
+      
+      // Update temporary app settings to ensure file path is available immediately
+      appSettings.excelPath = filePath;
+      
+      logBasic('info', 'Initial setup Excel file selected', { fileName: file.name, path: filePath });
     }
   });
   
@@ -2088,7 +2112,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       // Set the file path
       pathInput.value = file.path;
       
-      logBasic('info', 'Valid Excel file selected', { fileName: file.name, path: file.path });
+      // Immediately update settings to ensure file path is available for Python debug
+      appSettings.excelPath = file.path;
+      localStorage.setItem('lectureLoggerSettings', JSON.stringify(appSettings));
+      
+      // Also sync to Python bridge immediately
+      savePythonSettings();
+      
+      logBasic('info', 'Valid Excel file selected and settings updated', { fileName: file.name, path: file.path });
     }
   });
   
@@ -2823,10 +2854,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         this.disabled = true;
         this.innerHTML = '🔄 Loading...';
         
+        // First, ensure Python settings are synced
+        await savePythonSettings();
+        
         const result = await callPythonBridge('test_connection');
         
         if (result.success) {
           const data = result.data;
+          const currentExcelPath = appSettings.excelPath || 'Not set in UI';
+          const pathExists = currentExcelPath !== 'Not set in UI' && fs.existsSync(currentExcelPath);
+          
           content.innerHTML = `
             <div class="row">
               <div class="col-md-6">
@@ -2847,7 +2884,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                   </div>
                   <div class="card-body">
                     <p><strong>Settings Loaded:</strong> <span class="badge ${data.settings_loaded ? 'bg-success' : 'bg-warning'}">${data.settings_loaded ? 'Yes' : 'No'}</span></p>
-                    <p><strong>Excel Path:</strong><br><code>${data.excel_path}</code></p>
+                    <p><strong>Excel Path (Python):</strong><br><code>${data.excel_path}</code></p>
+                    <p><strong>Excel Path (UI):</strong><br><code>${currentExcelPath}</code></p>
+                    <p><strong>File Exists:</strong> <span class="badge ${pathExists ? 'bg-success' : 'bg-danger'}">${pathExists ? 'Yes' : 'No'}</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-12">
+                <div class="card border-warning">
+                  <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">🔍 Debugging Information</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="small">
+                      <strong>UI Settings:</strong><br>
+                      Excel Path: <code>${appSettings.excelPath || 'Not set'}</code><br>
+                      Starting Row: <code>${appSettings.startingRow || 'Not set'}</code><br>
+                      <strong>Sync Status:</strong> ${currentExcelPath === data.excel_path ? '✅ Synchronized' : '❌ Not synchronized'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2857,7 +2913,14 @@ document.addEventListener('DOMContentLoaded', async function() {
           content.innerHTML = `
             <div class="alert alert-danger">
               <h6>❌ Python Connection Failed</h6>
-              <p>${result.error}</p>
+              <p><strong>Error:</strong> ${result.error}</p>
+              ${result.stderr ? `<p><strong>Python Error Output:</strong><br><code>${result.stderr}</code></p>` : ''}
+              ${result.stdout ? `<p><strong>Python Output:</strong><br><code>${result.stdout}</code></p>` : ''}
+            </div>
+            <div class="alert alert-info">
+              <h6>🔍 Debugging Info</h6>
+              <p><strong>UI Excel Path:</strong> <code>${appSettings.excelPath || 'Not set'}</code></p>
+              <p><strong>File Exists:</strong> ${appSettings.excelPath && fs.existsSync(appSettings.excelPath) ? '✅ Yes' : '❌ No'}</p>
             </div>
           `;
         }
@@ -2866,6 +2929,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           <div class="alert alert-danger">
             <h6>❌ Error</h6>
             <p>${error.message}</p>
+            <p><strong>Current UI Excel Path:</strong> <code>${appSettings.excelPath || 'Not set'}</code></p>
           </div>
         `;
       } finally {
@@ -2941,6 +3005,64 @@ document.addEventListener('DOMContentLoaded', async function() {
       pythonDebugLogs.length = 0;
       const content = document.getElementById('pythonLogsContent');
       content.innerHTML = '<div class="text-center text-muted"><p>Logs cleared</p></div>';
+    });
+  }
+  
+  // Force Sync Settings Button
+  const forceSyncSettingsBtn = document.getElementById('forceSyncSettingsBtn');
+  if (forceSyncSettingsBtn) {
+    forceSyncSettingsBtn.addEventListener('click', async function() {
+      const originalText = this.innerHTML;
+      const content = document.getElementById('pythonStatusContent');
+      
+      try {
+        this.disabled = true;
+        this.innerHTML = '🔗 Syncing...';
+        
+        // Show current UI state
+        content.innerHTML = `
+          <div class="alert alert-info">
+            <h6>🔗 Force Syncing Settings...</h6>
+            <p><strong>Current UI Excel Path:</strong> <code>${appSettings.excelPath || 'Not set'}</code></p>
+            <p><strong>File Exists:</strong> ${appSettings.excelPath && fs.existsSync(appSettings.excelPath) ? '✅ Yes' : '❌ No'}</p>
+          </div>
+        `;
+        
+        // Force save Python settings
+        const syncResult = await savePythonSettings();
+        
+        // Test Python connection after sync
+        const testResult = await callPythonBridge('test_connection');
+        
+        content.innerHTML = `
+          <div class="alert ${syncResult ? 'alert-success' : 'alert-warning'}">
+            <h6>🔗 Settings Sync ${syncResult ? 'Successful' : 'Failed'}</h6>
+            <p><strong>UI Excel Path:</strong> <code>${appSettings.excelPath || 'Not set'}</code></p>
+            <p><strong>Python Excel Path:</strong> <code>${testResult.success ? testResult.data.excel_path : 'Could not retrieve'}</code></p>
+            <p><strong>Paths Match:</strong> ${testResult.success && appSettings.excelPath === testResult.data.excel_path ? '✅ Yes' : '❌ No'}</p>
+            ${!testResult.success ? `<p><strong>Python Error:</strong> ${testResult.error}</p>` : ''}
+          </div>
+        `;
+        
+        // Auto-refresh the full status after sync
+        setTimeout(() => {
+          const refreshBtn = document.getElementById('refreshPythonStatusBtn');
+          if (refreshBtn) {
+            refreshBtn.click();
+          }
+        }, 1000);
+        
+      } catch (error) {
+        content.innerHTML = `
+          <div class="alert alert-danger">
+            <h6>❌ Sync Error</h6>
+            <p>${error.message}</p>
+          </div>
+        `;
+      } finally {
+        this.disabled = false;
+        this.innerHTML = originalText;
+      }
     });
   }
   
@@ -3096,4 +3218,15 @@ document.addEventListener('DOMContentLoaded', async function() {
       checkForUpdates(false);
     }
   }, 2000); // Wait 2 seconds after startup
+  
+  // Signal to main process that app is ready
+  setTimeout(async () => {
+    try {
+      console.log('🔄 Signaling app ready to main process...');
+      const result = await ipcRenderer.invoke('app-ready');
+      console.log('✅ App ready signal completed:', result);
+    } catch (error) {
+      console.error('❌ Error signaling app ready:', error);
+    }
+  }, 2000); // Wait 2 seconds for initialization to complete
 });
