@@ -1,0 +1,255 @@
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:24:06
+
+INFO    - 2025-09-24 13:24:08 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:24:08 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:24:09 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:24:09 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-24 13:24:10 - addModule() - Added Module: ENG5139' to 'rowData' list
+INFO    - 2025-09-24 13:24:12 - addDescription - Added description to rowData list.
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:33:23
+
+INFO    - 2025-09-24 13:33:27 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:33:27 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:33:28 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:33:29 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-24 13:33:29 - addModule() - Added Module: ENG5139' to 'rowData' list
+INFO    - 2025-09-24 13:33:35 - addDescription - Added description to rowData list.
+#FATAL# - 2025-09-24 13:33:50 - addDeclaration() - Fatal error - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:35:53
+
+INFO    - 2025-09-24 13:35:56 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:35:56 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:35:57 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:35:57 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-24 13:35:58 - addModule() - Added Module: ENG5139' to 'rowData' list
+INFO    - 2025-09-24 13:36:03 - addDescription - Added description to rowData list.
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:36:40
+
+INFO    - 2025-09-24 13:36:44 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:36:44 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:36:44 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:36:45 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-24 13:36:45 - addModule() - Added Module: ENG5139' to 'rowData' list
+INFO    - 2025-09-24 13:36:48 - addDescription - Added description to rowData list.
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:39:33
+
+INFO    - 2025-09-24 13:39:36 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:39:36 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:39:37 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:39:39 - addType() - Added Type:'Reading' to 'rowData' list
+INFO    - 2025-09-24 13:39:40 - addModule() - Added Module: CMP4267' to 'rowData' list
+INFO    - 2025-09-24 13:39:45 - addDescription - Added description to rowData list.
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:45:53
+
+INFO    - 2025-09-24 13:45:55 - addDate() - Added date:'toay' to 'rowData' list
+#FATAL# - 2025-09-24 13:45:55 - addAcadYear() - Fatal error - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:46:11
+
+INFO    - 2025-09-24 13:46:13 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:46:13 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:46:15 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:46:15 - addType() - Added Type:'External Practice Exposure' to 'rowData' list
+INFO    - 2025-09-24 13:46:16 - addModule() - Added Module: DIG4142' to 'rowData' list
+INFO    - 2025-09-24 13:46:21 - addDescription - Added description to rowData list.
+INFO    - 2025-09-24 13:46:40 - addDeclaration() - Added Declaration: No' to 'rowData' list
+#FATAL# - 2025-09-24 13:46:45 - runProgram() - [Errno 13] Permission denied: 'OTJ for Python.xlsx'
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:50:02
+
+INFO    - 2025-09-24 13:50:04 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:50:04 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:50:06 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:50:06 - addType() - Added Type:'Other' to 'rowData' list
+INFO    - 2025-09-24 13:50:11 - addModule() - Added Module: DIG6203' to 'rowData' list
+INFO    - 2025-09-24 13:50:15 - addDescription - Added description to rowData list.
+#FATAL# - 2025-09-24 13:50:20 - addKSB() - Unable to get KSBs for module code provided - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:53:31
+
+INFO    - 2025-09-24 13:53:34 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:53:34 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:53:35 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:53:35 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-24 13:53:36 - addModule() - Added Module: ENG4098' to 'rowData' list
+INFO    - 2025-09-24 13:53:39 - addDescription - Added description to rowData list.
+INFO    - 2025-09-24 13:53:58 - addDeclaration() - Added Declaration: Yes' to 'rowData' list
+INFO    - 2025-09-24 13:54:04 - writeRow() - Wrote rowData to OTJ for Python.xlsx
+#FATAL# - 2025-09-24 13:54:04 - moreEntries() - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:58:02
+
+INFO    - 2025-09-24 13:58:05 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:58:05 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:58:07 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:58:11 - addType() - Added Type:'Independent Study' to 'rowData' list
+INFO    - 2025-09-24 13:58:19 - addModule() - Added Module: DIG5130' to 'rowData' list
+INFO    - 2025-09-24 13:58:21 - addDescription - Added description to rowData list.
+INFO    - 2025-09-24 13:58:36 - addDeclaration() - Added Declaration: Yes' to 'rowData' list
+INFO    - 2025-09-24 13:58:42 - writeRow() - Wrote rowData to OTJ for Python.xlsx
+#FATAL# - 2025-09-24 13:58:42 - moreEntries() - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 13:59:18
+
+INFO    - 2025-09-24 13:59:21 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 13:59:21 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 13:59:22 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 13:59:23 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-24 13:59:25 - addModule() - Added Module: ENG4098' to 'rowData' list
+INFO    - 2025-09-24 13:59:29 - addDescription - Added description to rowData list.
+INFO    - 2025-09-24 13:59:48 - addDeclaration() - Added Declaration: No' to 'rowData' list
+#FATAL# - 2025-09-24 13:59:48 - addDeclaration() - Fatal error - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:00:00
+
+INFO    - 2025-09-24 14:00:03 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 14:00:03 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 14:00:04 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 14:00:04 - addType() - Added Type:'External Practice Exposure' to 'rowData' list
+INFO    - 2025-09-24 14:00:05 - addModule() - Added Module: CMP4286' to 'rowData' list
+INFO    - 2025-09-24 14:00:08 - addDescription - Added description to rowData list.
+INFO    - 2025-09-24 14:00:27 - addDeclaration() - Added Declaration: Yes' to 'rowData' list
+INFO    - 2025-09-24 14:00:33 - writeRow() - Wrote rowData to OTJ for Python.xlsx
+#FATAL# - 2025-09-24 14:00:33 - moreEntries() - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:01:07
+
+INFO    - 2025-09-24 14:01:10 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 14:01:10 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 14:01:10 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 14:01:11 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-24 14:01:11 - addModule() - Added Module: CMP4286' to 'rowData' list
+INFO    - 2025-09-24 14:01:14 - addDescription - Added description to rowData list.
+INFO    - 2025-09-24 14:01:40 - addDeclaration() - Added Declaration: Yes' to 'rowData' list
+INFO    - 2025-09-24 14:01:46 - writeRow() - Wrote rowData to OTJ for Python.xlsx
+#FATAL# - 2025-09-24 14:01:46 - runProgram() - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:03:36
+
+INFO    - 2025-09-24 14:03:59 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 14:03:59 - addAcadYear() - Added academic year 25/26 to rowData list.
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:04:18
+
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:18:11
+
+INFO    - 2025-09-24 14:18:16 - addDate() - Added date:'toay' to 'rowData' list
+#FATAL# - 2025-09-24 14:18:16 - addAcadYear() - Fatal error - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:23:50
+
+INFO    - 2025-09-24 14:23:52 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 14:23:52 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 14:26:14 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 14:26:18 - addType() - Added Type:'Independent Study' to 'rowData' list
+INFO    - 2025-09-24 14:26:25 - addModule() - Added Module: CMP5348' to 'rowData' list
+INFO    - 2025-09-24 14:26:27 - addDescription - Added description to rowData list.
+INFO    - 2025-09-24 14:26:47 - addDeclaration() - Added Declaration: Yes' to 'rowData' list
+INFO    - 2025-09-24 14:26:55 - writeRow() - Wrote rowData to OTJ for Python.xlsx
+INFO    - 2025-09-24 14:27:21 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 14:27:21 - addAcadYear() - Added academic year 25/26 to rowData list.
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:27:30
+
+INFO    - 2025-09-24 14:27:32 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 14:27:32 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 14:27:33 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 14:27:33 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-24 14:27:34 - addModule() - Added Module: CMP4267' to 'rowData' list
+INFO    - 2025-09-24 14:27:36 - addDescription - Added description to rowData list.
+INFO    - 2025-09-24 14:28:01 - addDeclaration() - Added Declaration: No' to 'rowData' list
+#FATAL# - 2025-09-24 14:28:01 - addConfirmation() - Fatal error - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:34:20
+
+INFO    - 2025-09-24 14:34:23 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 14:34:23 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 14:34:24 - addLocation() - Added Location:'Curzon Building, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-24 14:34:24 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-24 14:34:25 - addModule() - Added Module: CMP4267' to 'rowData' list
+INFO    - 2025-09-24 14:34:26 - addDescription - Added description to rowData list.
+INFO    - 2025-09-24 14:34:43 - addDeclaration() - Added Declaration: No' to 'rowData' list
+INFO    - 2025-09-24 14:34:51 - addConfirmation() - Added Confirmation: Yes' to 'rowData' list
+INFO    - 2025-09-24 14:34:57 - writeRow() - Wrote rowData to OTJ for Python.xlsx
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:55:48
+
+INFO    - 2025-09-24 14:55:50 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 14:55:50 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 14:55:52 - addLocation() - Added Location:'BBC Bristol' to 'rowData' list
+INFO    - 2025-09-24 14:55:54 - addType() - Added Type:'Independent Study' to 'rowData' list
+INFO    - 2025-09-24 14:55:56 - addModule() - Added Module: DIG6203' to 'rowData' list
+INFO    - 2025-09-24 14:55:58 - addDescription - Added description to rowData list.
+#FATAL# - 2025-09-24 14:56:01 - addKSB() - Unable to get KSBs for module code provided - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-24 14:56:57
+
+INFO    - 2025-09-24 14:56:59 - addDate() - Added date:'24/09/2025' to 'rowData' list
+INFO    - 2025-09-24 14:56:59 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-24 14:57:01 - addLocation() - Added Location:'BBC Bristol' to 'rowData' list
+INFO    - 2025-09-24 14:57:02 - addType() - Added Type:'Independent Study' to 'rowData' list
+INFO    - 2025-09-24 14:57:03 - addModule() - Added Module: DIG6203' to 'rowData' list
+INFO    - 2025-09-24 14:57:04 - addDescription - Added description to rowData list.
+#FATAL# - 2025-09-24 14:57:08 - addKSB() - Unable to get KSBs for module code provided - list index out of range
+
+
+
+PROGRAM STARTED @ 2025-09-25 11:05:12
+
+INFO    - 2025-09-25 11:05:15 - addDate() - Added date:'25/09/2025' to 'rowData' list
+INFO    - 2025-09-25 11:05:15 - addAcadYear() - Added academic year 25/26 to rowData list.
+INFO    - 2025-09-25 11:05:23 - addLocation() - Added Location:'Millenium Point, BCU City Centre' to 'rowData' list
+INFO    - 2025-09-25 11:05:25 - addType() - Added Type:'Lecture' to 'rowData' list
+INFO    - 2025-09-25 11:05:28 - addModule() - Added Module: CMP5346' to 'rowData' list
+INFO    - 2025-09-25 11:05:31 - addDescription - Added description to rowData list.
+INFO    - 2025-09-25 11:06:24 - addDeclaration() - Added Declaration: Yes' to 'rowData' list
+INFO    - 2025-09-25 11:06:30 - writeRow() - Wrote rowData to OTJ for Python.xlsx

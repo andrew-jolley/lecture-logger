@@ -75,3 +75,8 @@ def readRow(row):   #function to read a whole row
         output.append(contents) #add contents to output list to be returned
 
     return output
+
+
+def printL(line):   #function to print and log the input
+    print(line)
+    log(line,1)

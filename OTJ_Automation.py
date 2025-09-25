@@ -63,7 +63,7 @@ def getInitNotes():     #function to get the init notes from the settings.txt
 
 def readCell(row,col): #reads cell with specific coordinate
     wb = load_workbook(path) #open file
-    sheet = wb["OTJ log"] #set active sheet
+    sheet = wb["OTJ log"] #set active sheet 
     
     contents = (sheet.cell(row=row, column=col).value) #get all data from the row and col specified
     contents = str(contents) #convert data to string for processing
@@ -120,76 +120,76 @@ def findFirstBlankRow():    #finds the first blank row in the .xlsx where the da
 
 ## WRITING TO EXCEL ##
 
-def writeRow(): 
-    global rowData
+def writeRow():     #function to write rowData list to excel file. This is run after all the required info from the below functions has been collated. 
+    global rowData  #global to be used in the other functions below
     
-    print("Adding this data to the log. Please wait...")
+    print("\nAdding this data to the log. Please wait...")    #status message to user
 
-    wb = load_workbook(path)
-    sheet = wb["OTJ log"]
+    wb = load_workbook(path)    #open workbook
+    sheet = wb["OTJ log"]   #open sheet
     
-    row = findFirstBlankRow()    
+    row = findFirstBlankRow()    #get the first blank row available
     
     for col, value in enumerate(rowData, start=3):  # start=1 means column A
         sheet.cell(row=row, column=col, value=value)
     
-    wb.save(path)
+    wb.save(path)   #save file
     rowData = []    #reset row data list to avoid duplicate entries
     
-    print("This data has now been added to the log.")
-    log(f"writeRow() - Wrote rowData to {path}",1)
+    print("This data has now been added to the log.")   #print status message
+    log(f"writeRow() - Wrote rowData to {path}",1)      #add to log
     
 
-def addDate():
-    global date
+def addDate():  #function to get the required date from the user
+    global date     #global to be used in addAcadYear()
     
     date = input("Enter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
-    date = date.lower()
+    date = date.lower()     #enter required date and format
     
-    if date == "today": 
-        date = (datetime.now()).strftime("%d/%m/%Y")
+    if date == "today":     #user is able to enter 'today' to get the current date
+        date = (datetime.now()).strftime("%d/%m/%Y")    #format date as required
     
-    rowData.append(date)
+    rowData.append(date)    #add to rowData list
 
-    print(f"Got it, using '{date}'.")    
+    print(f"Got it, using '{date}'.")   #print status and log entry
     log(f"addDate() - Added date:'{date}' to 'rowData' list",1)
 
 
-def addAcadYear():
+def addAcadYear():  #function to use global data var above and get the current academic year, e.g. 25/26
     try: 
-        split = date.split("/")
+        split = date.split("/")     #take the date given in addDate() and split it into D/M/Y
         
-        year = int(split[2][-2:])
-        month = int(split[1])
+        year = int(split[2][-2:])   #set the year to be the last 2 digits of the year field from the split date, e.g. '26'
+        month = int(split[1])       #same for the month
         
-        if month >= 9:
-            startYear = year
+        if month >= 9:          #if month is > 9, then the acad year must be the current year
+            startYear = year    
         else: 
-            startYear -= 1
+            startYear -= 1      #else, the start year must be -1 from the current
             
-        endYear = startYear + 1
+        endYear = startYear + 1     #add 1 to the end year to allow for the acad year after the /
         
-        rowData.append(f"{startYear}/{endYear}")
-        log(f"addAcadYear() - Added academic year {startYear}/{endYear} to rowData list.",1)
+        rowData.append(f"{startYear}/{endYear}")    #add the academic year to the rowData list 
+        log(f"addAcadYear() - Added academic year {startYear}/{endYear} to rowData list.",1)    #add to the log
         
     
-    except ValueError as e:
+    except ValueError as e:     #if the wrong data type is entered, then state and log
         print("INCORRECT VALUE TYPE")
         fatal(f"addAcadYear() - Incorrect value type - {e}")
         
-    except Exception as e:
+    except Exception as e:  #any other exception, kill and log
         fatal(f"addAcadYear() - Fatal error - {e}")
 
         
     
     
     
-def addLocation():
+def addLocation():  #adding activity location to the rowData list
     try: 
-        selected = 0
-        print("\nPlease choose a location: \n")
+        selected = 0    #define var
+        print("\nPlease choose a location: \n")     
         
-        options = [
+        options = [     #defining options list, each will have a selectable index number
             "Home",
             "Curzon Building, BCU City Centre",
             "Millenium Point, BCU City Centre",
@@ -204,36 +204,36 @@ def addLocation():
             ]
         
         
-        for i in range (1,len(options)):
-            print(f"{i} - {options[i]}")
+        for i in range (1,len(options)):    #define the indexes of the options
+            print(f"{i} - {options[i]}")    #and print
             
-        selected = int(input("\nEnter the chosen location here >>     "))
+        selected = int(input("\nEnter the chosen location here >>     "))   #get the users selection
         
-        if selected > len(options)-1 or selected == 0: 
+        if selected > len(options)-1 or selected == 0:      #validate input, if invalid, then go to start of function
             print("Sorry, that option is not valid. Please try again...\n")
             addLocation()
             
-        rowData.append(options[selected])
+        rowData.append(options[selected])       #add selection to rowData
     
-        print(f"Got it, using '{options[selected]}'.")    
+        print(f"Got it, using '{options[selected]}'.")      #status and log
         log(f"addLocation() - Added Location:'{options[selected]}' to 'rowData' list",1)
         
-    except ValueError as e:
+    except ValueError as e:         #if the wrong data type is entered, then state and log
         print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
         log(f"addLocation() - {e} - looping to start of function",2)
         addLocation()
         
-    except Exception as e:
+    except Exception as e:  #any other exception, kill and log
         fatal(f"addLocation() - Fatal error - {e}")
     
     
-def addType():
+def addType():   #adding activity type to the rowData list
     try:
         print("\nPlease choose an activity type: \n")
         
-        selected = 0
+        selected = 0    #define var
 
-        options = [
+        options = [        #defining options list, each will have a selectable index number
             "Annual Leave",
             "Assignment Writing",
             "Combination of activities",
@@ -251,30 +251,30 @@ def addType():
             "Independent Study"
         ]
 
-        for i in range (1,len(options)):
-            print(f"{i} - {options[i]}")
+        for i in range (1,len(options)):     #define the indexes of the options
+            print(f"{i} - {options[i]}")    #and print
             
-        selected = int(input("\nEnter the chosen location here >>     "))
+        selected = int(input("\nEnter the chosen location here >>     "))   #get the users selection
         
-        if selected > len(options)-1 or selected == 0: 
+        if selected > len(options)-1 or selected == 0:          #validate input, if invalid, then go to start of function
             print("Sorry, that option is not valid. Please try again...\n")
             addType()
             
-        rowData.append(options[selected])
+        rowData.append(options[selected])   #add selection to rowData
     
-        print(f"Got it, using '{options[selected]}'.")    
+        print(f"Got it, using '{options[selected]}'.")          #status and log
         log(f"addType() - Added Type:'{options[selected]}' to 'rowData' list",1)
         
-    except ValueError as e:
+    except ValueError as e:       #if the wrong data type is entered, then state and log
         print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
         log(f"addType() - {e} - looping to start of function",2)
         addType()
         
-    except Exception as e:
+    except Exception as e:     #any other exception, kill and log
         fatal(f"addType() - Fatal error - {e}")
    
         
-def addModule():
+def addModule():      #see above
     try:
         print("\nPlease choose a module code: \n")
         
@@ -301,19 +301,20 @@ def addModule():
             "DIG6203"
         ]
 
-        for i in range (1,len(options)):
-            print(f"{i} - {options[i]}")
+        for i in range (len(options)):
+            print(f"{i+1} - {options[i]}")
             
         selected = int(input("\nEnter the chosen module here >>     "))
         
-        if selected > len(options)-1 or selected == 0: 
+        if selected < 1 or selected > len(options): 
             print("Sorry, that option is not valid. Please try again...\n")
             addType()
+            return #ensure full exit post recursion
             
-        rowData.append(options[selected])
+        rowData.append(options[selected-1])
     
-        print(f"Got it, using '{options[selected]}'.")    
-        log(f"addModule() - Added Module: {options[selected]}' to 'rowData' list",1)
+        print(f"Got it, using '{options[selected-1]}'.")    
+        log(f"addModule() - Added Module: {options[selected-1]}' to 'rowData' list",1)
         
     except ValueError as e:
         print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
@@ -324,78 +325,161 @@ def addModule():
         fatal(f"addModule() - Fatal error - {e}")
         
         
-def addDescription():
+def addDescription():       #function to add description of activity to rowData
     try:    
-        line = ""
-        line = input("\nEnter a breif overview of what you did in this session....\n\n")
+        line = ""   #define var
+        line = input("\nEnter a breif overview of what you did in this session....\n\n")    #take input
         
-        if line != "":
-            rowData.append(line)
-            print("\n\nCool, we'll add that to the OTJ log.")
-            log("addDescription - Added description to rowData list.")
-        else:
+        if line != "":  #if input is valid
+            rowData.append(line)    #add input to rowData
+            print("\n\nCool, we'll add that to the OTJ log.")   #print and log
+            log("addDescription - Added description to rowData list.",1)
+        else:   #if invalid
             print("\n\nSorry, that's invalid...")
-            log(f"addDescription() - Invalid input '{line}'")
-            addDescription()
+            log(f"addDescription() - Invalid input '{line}'",2)
+            addDescription()    #go to start of function
             
-    except Exception as e:
+    except Exception as e:      #if fatal error, use fatal()
         fatal(f"addDescription() - Fatal error - {e}")
 
 
-def addDetails():
+def addDetails():       #function to add details of activity to rowData
     try:
-        line = input("\nEnter more details about what you did in this session....\n\n")
+        line = input("\nEnter more details about what you did in this session....\n\n")     #take input
         
-        if line != "":
-            rowData.append(line)
+        if line != "":      #if valid, add to rowData
+            rowData.append(line)    
             print("\n\nCool, we'll add that to the OTJ log.")
-        else:
+        else:   #else, restart function
             print("\n\nSorry, this is a required field...")
             log(f"addDetails() - Invalid input - '{line}'")
             addDetails()    
-            
-    except Exception as e:
+             
+    except Exception as e:      #error handling
         fatal(f"addDetails() - Fatal error - {e}")
         
         
-def addKSB():    
+def addKSB():       #add KSBs to rowData
     try: 
-        if rowData[4] != "Not applicable":
-            KSB = getKSB(rowData[4])
+        if rowData[4] != "Not applicable":      #only if module code provided
+            print(rowData[4])
+            KSB = getKSB(rowData[4])    #use getKSB() to get the KSBs for the provided code
             print("KSBs received")
-            rowData.append(KSB)
-    except Exception as e:
+            rowData.append(KSB)     #add to rowData
+    except Exception as e:  #error handling
         fatal(f"addKSB() - Unable to get KSBs for module code provided - {e}")
         
         
-def addNextSteps():
-    line = input("\nEnter any next steps if applicable....\n\n")
+def addNextSteps():     #add next steps to rowData
+    try: 
+        line = ""      #define var
+        line = input("\nEnter any next steps if applicable....\n\n")    #take input
+        
+        rowData.append(line)    #add to rowData
+        
+        if line =="":       #Next Steps is optional data, so print correct line depending on if input provided
+            print("No worries, we won't add anything\n")
+        else: 
+            print("Cool, we'll add that to the OTJ log.")
     
-    rowData.append(line)
-    
-    if line =="":
-        print("No worries, we won't add anything\n")
-    else: 
-        print("Cool, we'll add that to the OTJ log.")
+    except Exception as e:  #handle fatal errors
+        fatal(f"addNextSteps() - Fatal error - {e}")
     
 
-def addDuration():   
+def addDuration():      #add activity duration to rowData
     try: 
-        hours = int(input("Enter the hours spent during this session (e.g. 2.5)...     "))
+        hours = int(input("Enter the hours spent during this session (e.g. 2.5)...     "))  #take input
     
-        if hours <= 0 or hours >= 50:
+        if hours <= 0 or hours >= 50:   #if input invalid
             print("Sorry, that's not valid. The input must be between 0 and 50 hours. Try again\n")
-            addDuration()
+            addDuration()   #go to start of function
+        else: 
+            rowData.append(hours)   #if valid, add to rowData
             
-        rowData.append(hours)
-            
-    except ValueError as e:
+    except ValueError as e:     #handle value errors and restart function
         print("INCORRECT VALUE TYPE ENTERED\nTry again\n\n")
         log(f"addDuration() - ValueError - {e}")
         addDuration()
         
-    except Exception as e:
+    except Exception as e:  #handle fatal errors
         fatal(f"addDuration() - Fatal error - {e}")
+        
+        
+def addDeclaration():   #used to edit column M in the .xlsx, to confirm completed in normal working hours
+    try:
+        print("\nHas this been completed within normal working hours?\n")
+        
+        selected = 0    
+
+        options = [
+            "Yes",
+            "No"
+        ]
+
+        for i in range (len(options)):
+            print(f"{i+1} - {options[i]}")
+            
+        selected = int(input("\nEnter selection >>     "))
+        
+        if selected < 1 or selected > len(options): 
+            print("Sorry, that option is not valid. Please try again...\n")
+            addDeclaration()
+            return
+            
+        rowData.append(options[selected-1])
+    
+        print(f"Got it, using '{options[selected-1]}'.")
+        log(f"addDeclaration() - Added Declaration: {options[selected-1]}' to 'rowData' list",1)
+        
+        if options[selected-1] == "No":
+            addConfirmation()
+        else:
+            rowData.append("Not applicable")
+        
+    except ValueError as e:
+        print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
+        log(f"addDeclaration() - {e} - looping to start of function",2)
+        addType()
+        
+    except Exception as e:
+        fatal(f"addDeclaration() - Fatal error - {e}")
+        
+
+def addConfirmation():
+    try:
+        print("\nHas this been approved by the employer?\n")
+        
+        selected = 0
+
+        options = [
+            "Yes",
+            "No",
+            "Not applicable"
+        ]
+
+        for i in range (len(options)):
+            print(f"{i+1} - {options[i]}")
+            
+        selected = int(input("\nEnter selection >>     "))
+        
+        if selected < 1 or selected > len(options): 
+            print("Sorry, that option is not valid. Please try again...\n")
+            addConfirmation()
+            return
+            
+        rowData.append(options[selected-1])
+    
+        print(f"Got it, using '{options[selected-1]}'.")
+        log(f"addConfirmation() - Added Confirmation: {options[selected-1]}' to 'rowData' list",1)
+        
+    except ValueError as e:
+        print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
+        log(f"addConfirmation() - {e} - looping to start of function",2)
+        addType()
+        
+    except Exception as e:
+        fatal(f"addConfirmation() - Fatal error - {e}")
+        
         
 
 
@@ -513,17 +597,13 @@ def removeNewLines(string):     #function to remove new lines where needed, inst
     try:    #error handling
         output = string.replace("\n","")    #take the inputted string, and remove the \n
         return output
-    except Exception:   #if error, then file name exception could occur, requiring fatal error closure
-        fatal("In removeNewLines() - Unable to replace '\n'")
-        
-
-def printL(line):   #function to print and log the input
-    print(line)
-    log(line,1)
+    except Exception as e:   #if error, then file name exception could occur, requiring fatal error closure
+        fatal(f"In removeNewLines() - Unable to remove new line - {e}")
     
 
 def log(line,style):    #function to log input with either info, error or fatal tags at the start. 
     
+        
     currentTime = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")    #get current time
     
     if style == 1:      #depending on the style, use wrtTXT() to write the output defined to the log.txt file in Backend Files. 
@@ -543,7 +623,6 @@ def log(line,style):    #function to log input with either info, error or fatal 
     else:   #if the log style cannot be defined, recur back through and send error message.  
         log(f"In function 'log()' - UNKNOWN LOG STYLE '{style}'",2)
         
-        
 def fatal(line):    #function to kill program if fatal error
                     #call this function from other functions where a fatal error exception could occur
     log(line,999)   #auto log fatal error
@@ -553,7 +632,75 @@ def fatal(line):    #function to kill program if fatal error
     print("FATAL ERROR - PROGRAM FORCE QUIT IN 5 SECONDS - CONTACT LIAM - SEE LOGS")
     print("#########################################################################")
     time.sleep(5)   #wait 5 sec before closing program
-    os._exit(1)  #close program
+    os._exit(1)  #force close 
+    
+    
+def moreEntries():  #ask the user if they want to add more data
+    try:  
+        print("\nDo you want to add more entries to your OTJ log?\n")   #print line
+        
+        options = [     #valid options
+            "Yes",
+            "No"
+            ]
+        
+        for i in range (len(options)):
+            print(f"{i+1} - {options[i]}")
+            
+        choice = int(input("\nEnter selection:    "))     #enter selection
+        
+        if choice < 1 or choice > len(options):
+            print("Sorry, that's an invalid option...")
+            moreEntries()
+            return
+        
+        else: 
+            selection = options[choice-1]
+        
+        if selection == 'Yes':
+            runProgram()
+            log("moreEntries() - looping to start of program in 'runProgram()'",1)
+        elif selection == "No":
+            input("No worries, hit enter again to quit the program...     ")    
+        else:
+            print("That's an invalid selection")
+            log("moreEntries() - Invalid selection - looping to start of function",2)
+            moreEntries()
+            return
+            
+    except ValueError as e:
+        print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
+        log(f"moreEntries() - {e} - looping to start of function",2)
+        moreEntries()
+        return
+            
+    except Exception as e:   #fatal code if req
+        fatal(f"moreEntries() - {e}")
+        
+        
+        
+def runProgram():
+    try:
+        addDate()
+        addAcadYear()
+        addLocation()
+        addType()
+        addModule()
+        addDescription()
+        addDetails()
+        addKSB()
+        addNextSteps()
+        addDuration()
+        addDeclaration()
+        
+        writeRow()
+    
+        moreEntries()
+        
+    except Exception as e:   #fatal code if req
+        fatal(f"runProgram() - {e}")
+        
+    
         
 #
 #
@@ -588,35 +735,14 @@ rowData = []    #define for adding entries to instances of writing rows
 #
 
 ## MAIN PROGRAM ##
+
 log("","Start")   #adds a starting line to the log for the current instance
 
 path()  #gets the file path for the Excel file
 
 if path != "":  #if path exists
     print(getInitNotes())
+    runProgram()
     
-    addDate()
-    addAcadYear()
-    addLocation()
-    addType()
-    addModule()
-    addDescription()
-    addDetails()
-    addKSB()
-    addNextSteps()
-    addDuration()
-    
-    writeRow()
-    
-
-
-
-
-
-
-
-
-
-
 
 
