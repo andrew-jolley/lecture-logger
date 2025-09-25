@@ -329,49 +329,75 @@ def process_form_data(data):
     """Process form data from Electron and write to Excel"""
     global rowData, path
     
+    import re
     try:
         # Get Excel path
         path = get_excel_path()
-        
+
+        # Helper: Validate date format
+        def is_valid_date(date_str):
+            if date_str.lower() == 'today':
+                return True
+            return bool(re.match(r"^\d{2}/\d{2}/\d{4}$", date_str))
+
+        # Helper: Validate dropdown
+        def validate_dropdown(value, options, field_name):
+            if value not in options:
+                raise Exception(f"Invalid value for {field_name}: '{value}'. Must be one of: {', '.join(options)}")
+
         # Validate required fields
         required_fields = ['date', 'location', 'activityType', 'moduleCode', 'description', 'details', 'duration']
         for field in required_fields:
             if field not in data or not data[field]:
                 raise Exception(f"Missing required field: {field}")
-        
-        # Validate conditional fields for declaration/confirmation logic
-        if 'declaration' in data and data['declaration'] == 'No':
-            if 'confirmation' not in data or not data['confirmation']:
-                raise Exception("Confirmation field is required when declaration is 'No'")
-        
-        # Build rowData array in the same order as original script
-        rowData = []
-        
-        # Add date
+
+        # Validate date
         date_value = data['date']
+        if not is_valid_date(date_value):
+            raise Exception("Date must be in format DD/MM/YYYY or 'today'")
         if date_value.lower() == 'today':
             date_value = datetime.now().strftime("%d/%m/%Y")
+
+        # Validate dropdowns
+        dropdowns = get_dropdown_options()
+        validate_dropdown(data['location'], dropdowns['locations'], 'location')
+        validate_dropdown(data['activityType'], dropdowns['activityTypes'], 'activityType')
+        validate_dropdown(data['moduleCode'], dropdowns['moduleCodes'], 'moduleCode')
+
+        # Validate conditional fields for declaration/confirmation logic
+        declaration_value = data.get('declaration', 'Yes')
+        validate_dropdown(declaration_value, dropdowns['declarationOptions'], 'declaration')
+        confirmation_value = data.get('confirmation', 'Not applicable')
+        validate_dropdown(confirmation_value, dropdowns['confirmationOptions'], 'confirmation')
+        if declaration_value == 'No' and (not confirmation_value or confirmation_value == 'Not applicable'):
+            raise Exception("Confirmation field is required and must not be 'Not applicable' when declaration is 'No'")
+
+        # Build rowData array in the same order as original script
+        global rowData
+        rowData = []
+
+        # Add date
         rowData.append(date_value)
-        
+
         # Add academic year (calculated from date)
         academic_year = calculate_academic_year(date_value)
         rowData.append(academic_year)
-        
+
         # Add location
         rowData.append(data['location'])
-        
+
         # Add activity type
         rowData.append(data['activityType'])
-        
+
         # Add module code
         rowData.append(data['moduleCode'])
-        
+
         # Add description
         rowData.append(data['description'])
-        
+
         # Add details
         rowData.append(data['details'])
-        
+
         # Add KSB (if module is not "Not applicable")
         if data['moduleCode'] != "Not applicable":
             try:
@@ -382,55 +408,57 @@ def process_form_data(data):
                 log(f"KSB Error: {str(e)}", 2)
         else:
             rowData.append("")  # Empty KSB for "Not applicable"
-        
+
         # Add next steps
         rowData.append(data.get('nextSteps', ''))
-        
+
         # Add duration
-        duration = float(data['duration'])
+        try:
+            duration = float(data['duration'])
+        except Exception:
+            raise Exception("Duration must be a number")
         if duration <= 0 or duration >= 50:
             raise Exception("Duration must be between 0 and 50 hours")
         rowData.append(duration)
-        
+
         # Add declaration and confirmation (new columns M and N)
         log(f"Adding declaration/confirmation - rowData length before: {len(rowData)}", 1)
-        declaration_value = data.get('declaration', 'Yes')  # Default to 'Yes' if not provided
-        log(f"Declaration value from data: {declaration_value}", 1)
-        
         declaration, confirmation = addDeclaration(declaration_value)
         log(f"addDeclaration returned: {declaration}, {confirmation}", 1)
         rowData.append(declaration)
-        
+
         # Add confirmation value
         if confirmation is None:
             # Declaration was 'No', so get confirmation from data
-            confirmation_value = data.get('confirmation', 'Not applicable')
             confirmation = addConfirmation(confirmation_value)
             log(f"addConfirmation returned: {confirmation}", 1)
         rowData.append(confirmation)
         log(f"Final rowData length: {len(rowData)}", 1)
-        
+
         # Write to Excel
         wb = load_workbook(path)
         sheet = wb["OTJ log"]
-        
+
         row = findFirstBlankRow()
-        
+
         for col, value in enumerate(rowData, start=3):
             sheet.cell(row=row, column=col, value=value)
-        
+
         wb.save(path)
-        
+
         # Log success
         log(f"Bridge - Successfully wrote data to row {row}", 1)
-        
+
+        # Reset rowData after writing (prevents duplicate entries)
+        rowData = []
+
         return {
             "success": True,
             "message": f"Successfully added entry to row {row}",
             "row": row,
             "data": rowData
         }
-        
+
     except Exception as e:
         error_msg = str(e)
         log(f"Bridge Error: {error_msg}", 2)
