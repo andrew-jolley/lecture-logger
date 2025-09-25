@@ -1,21 +1,24 @@
 {
   "name": "lecture-logger",
-  "version": "2.6.0",
-  "buildNumber": "20250924.327",
+  "version": "2.6.3",
+  "buildNumber": "20250924.373",
   "uiVersion": "2.0.1",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley <andrew@jolley.dev> (UI/Frontend), Liam Shadwell (Python Backend)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "clean": "rm -rf dist/",
+    "clean": "node -e \"const fs = require('fs'); if (fs.existsSync('dist')) fs.rmSync('dist', {recursive: true, force: true})\"",
     "setup-python": "node scripts/setup-multiplatform-python.js",
     "predist": "npm run setup-python",
-    "dist": "npm run clean && electron-builder -mw --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
-    "dist:mac": "npm run clean && electron-builder --mac --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
-    "dist:win": "npm run clean && electron-builder --win --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
-    "dist:linux": "npm run clean && electron-builder --linux --config.directories.output=dist/$npm_package_version/$npm_package_buildNumber && npm run move-installers",
-    "move-installers": "mkdir -p '/Users/andrewjolley/Setup Files/v$npm_package_version' && find dist/ -name '*.dmg' -exec mv {} '/Users/andrewjolley/Setup Files/v$npm_package_version/' \\; && find dist/ -name '*Setup*.exe' -exec mv {} '/Users/andrewjolley/Setup Files/v$npm_package_version/' \\; && find dist/ -name '*.AppImage' -exec mv {} '/Users/andrewjolley/Setup Files/v$npm_package_version/' \\;"
+    "dist": "node scripts/build-helper.js all",
+    "dist:mac": "node scripts/build-helper.js mac",
+    "dist:win": "node scripts/build-helper.js win",
+    "dist:linux": "node scripts/build-helper.js linux",
+    "build": "npm run dist",
+    "build:win": "npm run dist:win",
+    "build:mac": "npm run dist:mac",
+    "build:linux": "npm run dist:linux"
   },
   "dependencies": {
     "exceljs": "^4.4.0"
@@ -55,7 +58,23 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "allowElevation": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": false,
+      "menuCategory": false,
+      "artifactName": "${productName}-${version}-x64.exe",
+      "uninstallDisplayName": "${productName}",
+      "include": "installer-script.nsh",
+      "installerHeaderIcon": null,
+      "uninstallerIcon": null,
+      "warningsAsErrors": false,
+      "displayLanguageSelector": false,
+      "installerLanguages": ["en_US"],
+      "packElevateHelper": true,
+      "guid": "a8b7bd78-cfea-5f1f-95a5-6a1b0730475d",
+      "removeDefaultUninstallWelcomePage": false
     },
     "mac": {
       "target": [
@@ -77,7 +96,10 @@
           "arch": ["x64"]
         }
       ],
-      "compression": "maximum"
+      "compression": "maximum",
+      "sign": null,
+      "forceCodeSigning": false,
+      "requestedExecutionLevel": "asInvoker"
     },
     "linux": {
       "target": [

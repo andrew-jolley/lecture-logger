@@ -872,18 +872,27 @@ ipcRenderer.on('update-download-complete', (event, data) => {
     
     // Determine platform-specific button text
     const isMac = process.platform === 'darwin';
-    const buttonText = isMac ? 'Open Installer (DMG)' : 'Open Installer (EXE)';
+    const isWindows = process.platform === 'win32';
+    const buttonText = isMac ? 'Open Installer (DMG)' : (isWindows ? 'Open Downloads Folder' : 'Open Installer (EXE)');
     downloadButton.textContent = buttonText;
     downloadButton.classList.remove('btn-primary');
     downloadButton.classList.add('btn-success');
     
-    // Update click handler to open installer directly
+    // Update click handler to open folder on Windows, installer on other platforms
     downloadButton.onclick = async () => {
-      const result = await ipcRenderer.invoke('open-installer', data.filePath);
-      if (result.success) {
-        showSuccessAlert('Installer opened!', 'Please follow the installation instructions.');
+      let result;
+      if (isWindows) {
+        result = await ipcRenderer.invoke('open-folder', data.filePath);
       } else {
-        showErrorAlert('Failed to open installer', result.error);
+        result = await ipcRenderer.invoke('open-installer', data.filePath);
+      }
+      
+      if (result.success) {
+        const successMessage = isWindows ? 'Downloads folder opened!' : 'Installer opened!';
+        const instructionMessage = isWindows ? 'Run the installer from your Downloads folder.' : 'Please follow the installation instructions.';
+        showSuccessAlert(successMessage, instructionMessage);
+      } else {
+        showErrorAlert(isWindows ? 'Failed to open folder' : 'Failed to open installer', result.error);
       }
     };
   }
@@ -1988,6 +1997,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }, 2000); // Increased delay to ensure modal is fully loaded
   
+
   // Dev button to trigger settings modal - moved inside DOMContentLoaded to ensure element exists
   const devSettingsBtn = document.getElementById('devSettingsBtn');
   if (devSettingsBtn) {
@@ -3209,4 +3219,15 @@ document.addEventListener('DOMContentLoaded', async function() {
       checkForUpdates(false);
     }
   }, 2000); // Wait 2 seconds after startup
+  
+  // Signal to main process that app is ready
+  setTimeout(async () => {
+    try {
+      console.log('🔄 Signaling app ready to main process...');
+      const result = await ipcRenderer.invoke('app-ready');
+      console.log('✅ App ready signal completed:', result);
+    } catch (error) {
+      console.error('❌ Error signaling app ready:', error);
+    }
+  }, 2000); // Wait 2 seconds for initialization to complete
 });

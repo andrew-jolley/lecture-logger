@@ -1,6 +1,6 @@
-; Custom NSIS script for Lecture Logger
-; This script handles proper app closure detection and killing processes
+; Custom NSIS script for Lecture Logger - Silent cleanup when app is detected
 
+<<<<<<< HEAD
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
 !include "nsDialogs.nsh"
@@ -24,82 +24,32 @@ FunctionEnd
 ; Function to kill processes using taskkill command (for installer)
 Function KillLectureLoggerProcesses
   DetailPrint "Checking for running Lecture Logger processes..."
+=======
+; This macro runs when NSIS detects a running app - instead of showing dialog, we clean up silently
+!macro customCheckAppRunning
+  DetailPrint "Automatically resolving running application conflicts..."
+>>>>>>> 8813884328ed60acc76e21a4f157fd6551a4c4cd
   
-  ; Kill Lecture Logger processes using taskkill (silent mode)
-  nsExec::ExecToStack 'taskkill /F /IM "Lecture Logger.exe" /T'
-  Pop $0 ; Get return code (0 = success, 128 = not found, other = error)
-  Pop $1 ; Get output
+  ; Kill any running Lecture Logger processes
+  nsExec::Exec 'taskkill /F /IM "Lecture Logger.exe" /T'
+  nsExec::Exec 'taskkill /F /IM "LectureLogger.exe" /T'
+  nsExec::Exec 'taskkill /F /IM "LectureLogger-*.exe" /T'
   
-  ; Kill any lingering electron processes that might be from our app
-  nsExec::ExecToStack 'taskkill /F /IM "electron.exe" /T'
-  Pop $0
-  Pop $1
-  
-  ; Also kill any processes that might be locking files
-  nsExec::ExecToStack 'taskkill /F /IM "node.exe" /T'
-  Pop $0
-  Pop $1
-  
-  nsExec::ExecToStack 'taskkill /F /IM "python.exe" /T'
-  Pop $0
-  Pop $1
-  
-  ; Wait longer for processes to terminate completely
-  DetailPrint "Waiting for processes to terminate..."
-  Sleep 3000
-  
-  DetailPrint "Process cleanup completed."
-FunctionEnd
-
-; Function to unlock files in installation directory
-Function UnlockInstallationFiles
-  DetailPrint "Unlocking installation files..."
-  
-  ; Try to remove read-only attributes
-  nsExec::ExecToStack 'attrib -R "$INSTDIR\*.*" /S'
-  Pop $0
-  Pop $1
-  
-  ; Kill any handles to files in the installation directory
-  nsExec::ExecToStack 'handle.exe -p "Lecture Logger" -y'
-  Pop $0
-  Pop $1
-  
+  ; Brief wait for process termination
   Sleep 1000
-FunctionEnd
+  
+  ; Remove existing installation directory to ensure clean install
+  RMDir /r "$LOCALAPPDATA\Programs\Lecture Logger"
+  
+  DetailPrint "Application conflicts resolved - continuing installation"
+!macroend
 
-; Function to kill processes using taskkill command (for uninstaller)
-Function un.KillLectureLoggerProcesses
-  DetailPrint "Checking for running Lecture Logger processes..."
-  
-  ; Kill Lecture Logger processes using taskkill (silent mode)
-  nsExec::ExecToStack 'taskkill /F /IM "Lecture Logger.exe" /T'
-  Pop $0 ; Get return code (0 = success, 128 = not found, other = error)
-  Pop $1 ; Get output
-  
-  ; Kill any lingering electron processes that might be from our app
-  nsExec::ExecToStack 'taskkill /F /IM "electron.exe" /T'
-  Pop $0
-  Pop $1
-  
-  ; Also kill any processes that might be locking files
-  nsExec::ExecToStack 'taskkill /F /IM "node.exe" /T'
-  Pop $0
-  Pop $1
-  
-  nsExec::ExecToStack 'taskkill /F /IM "python.exe" /T'
-  Pop $0
-  Pop $1
-  
-  ; Wait longer for processes to terminate completely
-  DetailPrint "Waiting for processes to terminate..."
-  Sleep 3000
-  
-  DetailPrint "Process cleanup completed."
-FunctionEnd
+!macro preInit
+  DetailPrint "Lecture Logger installer starting..."
+!macroend
 
-; Custom pre-install function
 !macro customInit
+<<<<<<< HEAD
   DetailPrint "Initializing Lecture Logger installer..."
   
   ; Detect if this is an upgrade
@@ -117,20 +67,17 @@ FunctionEnd
     ; Just kill any stray processes for fresh install
     Call KillLectureLoggerProcesses
   ${EndIf}
+=======
+  DetailPrint "Initializing installation..."
+>>>>>>> 8813884328ed60acc76e21a4f157fd6551a4c4cd
 !macroend
 
-; Custom pre-uninstall function  
-!macro customUnInit
-  DetailPrint "Preparing uninstallation..."
-  Call un.KillLectureLoggerProcesses
-!macroend
-
-; Custom install mode
 !macro customInstallMode
-  ; Set to current user context for better compatibility
   SetShellVarContext current
+  DetailPrint "Installing for current user"
 !macroend
 
+<<<<<<< HEAD
 ; Additional custom installer behavior
 !macro customHeader
   !system "echo Lecture Logger Custom Installer"
@@ -190,4 +137,12 @@ FunctionEnd
 !macro customInstall
   ; Nothing to do here - all cleanup was done before installation
   DetailPrint "Installation files copied successfully."
+=======
+!macro customInstall
+  DetailPrint "Installation completed successfully"
+!macroend
+
+!macro customUnInit
+  DetailPrint "Preparing to uninstall Lecture Logger..."
+>>>>>>> 8813884328ed60acc76e21a4f157fd6551a4c4cd
 !macroend
