@@ -7,7 +7,7 @@
 
 ## Get the latest download!
 
-https://github.com/liamshadwell/Python-OTJ-Automation/releases/latest
+https://github.com/andrew-jolley/lecture-logger/tree/python_packaged
 
 ---
 
