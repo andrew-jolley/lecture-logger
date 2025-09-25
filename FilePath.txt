@@ -1,5 +1,6 @@
-dOTJ for Python.xlsx
+OTJ for Python.xlsx
 
 NOTE: If Excel file is not in the same folder as the Python file, you will need to provide the full file path above. 
 
 	e.g. "C:\Users\shadwl01\OneDrive - BBC\Desktop\OTJ_Automation script\OTJ for Python.xlsx"
+
