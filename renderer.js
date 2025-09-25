@@ -2054,17 +2054,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     const pathInput = document.getElementById('initialExcelPath');
     
     if (file) {
-      const filePath = file.path;
+      // Get file path - handle different scenarios
+      const filePath = file.path || file.webkitRelativePath || file.name;
+      
+      console.log('Initial setup file selected:', { name: file.name, path: file.path, webkitRelativePath: file.webkitRelativePath });
       
       // Validate that it's an .xlsx file
-      if (!filePath.toLowerCase().endsWith('.xlsx')) {
+      if (!file.name.toLowerCase().endsWith('.xlsx')) {
         pathInput.value = '';
         alert('❌ Invalid File Type\n\nOnly Excel (.xlsx) files are supported. Please select a valid Excel file.');
         return;
       }
       
-      // Check if file exists
-      if (!fs.existsSync(filePath)) {
+      // If we have a full path, check if file exists
+      if (file.path && !fs.existsSync(file.path)) {
         pathInput.value = '';
         errorDiv.textContent = 'Selected file does not exist.';
         errorDiv.style.display = 'block';
@@ -2072,14 +2075,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
       }
       
-      // Valid file
-      pathInput.value = filePath;
+      // Valid file - use full path if available, otherwise use name
+      pathInput.value = file.path || file.name;
       errorDiv.style.display = 'none';
       pathInput.classList.remove('is-invalid');
       pathInput.classList.add('is-valid');
       
       // Update temporary app settings to ensure file path is available immediately
-      appSettings.excelPath = filePath;
+      appSettings.excelPath = file.path || file.name;
       
       logBasic('info', 'Initial setup Excel file selected', { fileName: file.name, path: filePath });
     }
@@ -2097,6 +2100,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const pathInput = document.getElementById('excelPath');
     
     if (file) {
+      console.log('Settings file selected:', { name: file.name, path: file.path, webkitRelativePath: file.webkitRelativePath });
+      
       // Validate file extension
       if (!file.name.toLowerCase().endsWith('.xlsx')) {
         pathInput.value = '';
@@ -2110,8 +2115,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       pathInput.classList.remove('is-invalid');
       pathInput.classList.add('is-valid');
       
-      // Set the file path
-      pathInput.value = file.path;
+      // Set the file path - use full path if available, otherwise use name
+      const filePath = file.path || file.name;
+      pathInput.value = filePath;
       
       // Immediately update settings to ensure file path is available for Python debug
       appSettings.excelPath = file.path;
@@ -3145,73 +3151,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   });
 
-  // Initial Setup Modal handlers
-  const initialBrowseFileBtn = document.getElementById('initialBrowseFileBtn');
-  const initialFileInput = document.getElementById('initialFileInput');
-  const saveInitialSetup = document.getElementById('saveInitialSetup');
-
-  if (initialBrowseFileBtn && initialFileInput) {
-    initialBrowseFileBtn.addEventListener('click', () => {
-      initialFileInput.click();
-    });
-
-    initialFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file && file.name.endsWith('.xlsx')) {
-        document.getElementById('initialExcelPath').value = file.path;
-        document.getElementById('initialFilePathError').style.display = 'none';
-      } else if (file) {
-        document.getElementById('initialFilePathError').textContent = 'Please select a valid Excel (.xlsx) file.';
-        document.getElementById('initialFilePathError').style.display = 'block';
-      }
-    });
-  }
-
-  if (saveInitialSetup) {
-    saveInitialSetup.addEventListener('click', async () => {
-      try {
-        const excelPath = document.getElementById('initialExcelPath').value;
-        const startingRow = parseInt(document.getElementById('initialStartingRow').value) || 125;
-        const autoUpdateCheck = document.getElementById('initialAutoUpdateCheck').checked;
-        const enableOTA = document.getElementById('initialEnableOTA').checked;
-
-        if (!excelPath) {
-          document.getElementById('initialFilePathError').textContent = 'Please select an Excel file.';
-          document.getElementById('initialFilePathError').style.display = 'block';
-          return;
-        }
-
-        await saveSettings(excelPath, startingRow, false, autoUpdateCheck, enableOTA);
-        
-        // Close the modal - try multiple methods to ensure it closes
-        const modalEl = document.getElementById('initialSetupModal');
-        if (modalEl) {
-          // Try to get existing instance first
-          let modal = bootstrap.Modal.getInstance(modalEl);
-          if (modal) {
-            modal.hide();
-          } else {
-            // If no instance exists, create one and hide it immediately
-            modal = new bootstrap.Modal(modalEl);
-            modal.hide();
-          }
-        }
-
-        showSuccessAlert('Settings saved successfully!', 'You can change these settings anytime from the ⚙️ Settings menu.');
-        
-        // Show release notes if pending
-        if (pendingReleaseNotes) {
-          setTimeout(() => {
-            showReleaseNotes();
-            pendingReleaseNotes = false;
-          }, 500);
-        }
-      } catch (error) {
-        console.error('Error in initial setup:', error);
-        alert('Error saving initial settings: ' + error.message);
-      }
-    });
-  }
+  // Initial Setup Modal handlers - removed duplicate, using the comprehensive handler above
 
   // Check for updates on startup if enabled
   setTimeout(() => {
