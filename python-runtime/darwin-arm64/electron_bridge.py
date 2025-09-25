@@ -1,4 +1,3 @@
-import re
 #!/usr/bin/env python3
 """
 Electron Bridge for OTJ Automation
@@ -330,6 +329,7 @@ def process_form_data(data):
     """Process form data from Electron and write to Excel"""
     global rowData, path
     
+    import re
     try:
         # Get Excel path
         path = get_excel_path()

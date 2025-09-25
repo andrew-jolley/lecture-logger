@@ -1,7 +1,7 @@
 {
   "name": "lecture-logger",
-  "version": "2.6.4",
-  "buildNumber": "20250925.529",
+  "version": "2.7.0",
+  "buildNumber": "20250925.577",
   "uiVersion": "2.0.1",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley <andrew@jolley.dev> (UI/Frontend), Liam Shadwell (Python Backend)",
