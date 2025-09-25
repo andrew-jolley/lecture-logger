@@ -736,42 +736,79 @@ ipcMain.handle('save-python-settings', async (event, settings) => {
   try {
     // Determine the correct settings path
     let settingsPath;
+    const debugLog = [];
     
     if (process.resourcesPath && __dirname.includes('app.asar')) {
       // Built app: first check if user has existing development settings
       const devSettingsPath = '/Users/andrewjolley/lecture-logger/python/electron_settings.json';
+      debugLog.push(`Checking for dev settings at: ${devSettingsPath}`);
       
       if (fs.existsSync(devSettingsPath)) {
         // Use existing development settings location
         settingsPath = devSettingsPath;
+        debugLog.push(`Using existing dev settings`);
       } else {
         // Save to app bundle location
         const appDir = path.dirname(process.resourcesPath);
         settingsPath = path.join(appDir, 'python', 'electron_settings.json');
+        debugLog.push(`Using app bundle settings path`);
       }
     } else {
       // Development: save to the main python directory
       settingsPath = path.join(__dirname, 'python', 'electron_settings.json');
+      debugLog.push(`Using development settings path`);
     }
+    
+    debugLog.push(`Final settings path: ${settingsPath}`);
+    debugLog.push(`Settings to save: ${JSON.stringify(settings, null, 2)}`);
     
     // Ensure directory exists
     const settingsDir = path.dirname(settingsPath);
     if (!fs.existsSync(settingsDir)) {
       fs.mkdirSync(settingsDir, { recursive: true });
+      debugLog.push(`Created settings directory: ${settingsDir}`);
     }
     
+    // Write settings file
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
     console.log('Python settings saved:', settingsPath);
+    debugLog.push('Settings file written successfully');
+    
+    // Verify the file was written correctly
+    if (fs.existsSync(settingsPath)) {
+      const savedContent = fs.readFileSync(settingsPath, 'utf8');
+      const parsedContent = JSON.parse(savedContent);
+      debugLog.push(`Verification: File exists and contains excelPath: ${parsedContent.excelPath}`);
+    } else {
+      debugLog.push('ERROR: Settings file does not exist after writing');
+    }
     
     // Also log to debug file
     try {
       const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
-      fs.appendFileSync(debugPath, `Settings saved to: ${settingsPath}\nSettings content: ${JSON.stringify(settings, null, 2)}\n\n`);
-    } catch (e) {}
+      const timestamp = new Date().toISOString();
+      fs.appendFileSync(debugPath, `\n=== Python Settings Save - ${timestamp} ===\n`);
+      debugLog.forEach(line => fs.appendFileSync(debugPath, `${line}\n`));
+      fs.appendFileSync(debugPath, `=====================================\n\n`);
+    } catch (e) {
+      console.warn('Could not write to debug log:', e.message);
+    }
     
-    return { success: true };
+    return { success: true, path: settingsPath };
   } catch (error) {
     console.error('Error saving Python settings:', error);
+    
+    // Log error to debug file
+    try {
+      const debugPath = path.join(os.homedir(), 'lecture-logger-debug.log');
+      const timestamp = new Date().toISOString();
+      fs.appendFileSync(debugPath, `\n=== Python Settings Save ERROR - ${timestamp} ===\n`);
+      fs.appendFileSync(debugPath, `Error: ${error.message}\n`);
+      fs.appendFileSync(debugPath, `Stack: ${error.stack}\n`);
+      fs.appendFileSync(debugPath, `Settings attempted: ${JSON.stringify(settings, null, 2)}\n`);
+      fs.appendFileSync(debugPath, `=====================================\n\n`);
+    } catch (e) {}
+    
     return { success: false, error: error.message };
   }
 });

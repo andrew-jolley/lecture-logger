@@ -1,6 +1,6 @@
 {
   "name": "lecture-logger",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "buildNumber": "20250924.373",
   "uiVersion": "2.0.1",
   "description": "An app to log lectures into an Excel spreadsheet",

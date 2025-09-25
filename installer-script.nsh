@@ -3,6 +3,23 @@
 
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
+!include "nsDialogs.nsh"
+
+; Variables
+Var IsUpgrade
+
+; Function to detect if this is an upgrade
+Function DetectUpgrade
+  ; Check registry for existing installation
+  ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\{a8b7bd78-cfea-5f1f-95a5-6a1b0730475d}" "InstallLocation"
+  ${If} $0 != ""
+    StrCpy $IsUpgrade "true"
+    DetailPrint "Upgrade detected - existing installation at: $0"
+  ${Else}
+    StrCpy $IsUpgrade "false"
+    DetailPrint "Fresh installation detected"
+  ${EndIf}
+FunctionEnd
 
 ; Function to kill processes using taskkill command (for installer)
 Function KillLectureLoggerProcesses
@@ -83,9 +100,23 @@ FunctionEnd
 
 ; Custom pre-install function
 !macro customInit
-  DetailPrint "Preparing installation..."
+  DetailPrint "Initializing Lecture Logger installer..."
+  
+  ; Detect if this is an upgrade
+  Call DetectUpgrade
+  
+  ; Always kill processes at the start
   Call KillLectureLoggerProcesses
-  Call UnlockInstallationFiles
+  
+  ${If} $IsUpgrade == "true"
+    DetailPrint "UPGRADE MODE: Previous installation will be completely removed and replaced."
+    ; Perform complete removal BEFORE installation begins
+    Call CompletelyRemoveExistingInstallation
+  ${Else}
+    DetailPrint "FRESH INSTALLATION: Installing Lecture Logger for the first time."
+    ; Just kill any stray processes for fresh install
+    Call KillLectureLoggerProcesses
+  ${EndIf}
 !macroend
 
 ; Custom pre-uninstall function  
@@ -105,49 +136,58 @@ FunctionEnd
   !system "echo Lecture Logger Custom Installer"
 !macroend
 
-; Handle upgrade scenario specifically
-!macro customInstall
-  ; Additional process cleanup before file operations
-  DetailPrint "Ensuring clean installation environment..."
+; Function to completely remove existing installation
+Function CompletelyRemoveExistingInstallation
+  DetailPrint "Performing complete removal of existing installation..."
+  
+  ; Kill all processes first
   Call KillLectureLoggerProcesses
-  Call UnlockInstallationFiles
   
-  ; Clear any locks on the installation directory
-  RMDir /r "$INSTDIR\*.tmp"
-  Delete "$INSTDIR\*.lock"
+  ; Wait extra time for file handles to be released
+  Sleep 3000
   
-  ; Force remove any stubborn files that might be blocking upgrade
-  ${If} ${FileExists} "$INSTDIR\Lecture Logger.exe"
-    DetailPrint "Removing existing executable..."
-    Delete /REBOOTOK "$INSTDIR\Lecture Logger.exe"
+  ; Remove read-only attributes from all files in the directory
+  ${If} ${FileExists} "$INSTDIR"
+    DetailPrint "Removing read-only attributes..."
+    nsExec::ExecToStack 'attrib -R "$INSTDIR\*.*" /S /D'
+    Pop $0
+    Pop $1
   ${EndIf}
   
-  ${If} ${FileExists} "$INSTDIR\resources\app.asar"
-    DetailPrint "Removing existing app resources..."
-    Delete /REBOOTOK "$INSTDIR\resources\app.asar"
+  ; Use multiple removal attempts with different methods
+  ${If} ${FileExists} "$INSTDIR"
+    DetailPrint "Attempting removal method 1: Standard RMDir..."
+    RMDir /r "$INSTDIR"
   ${EndIf}
-!macroend
+  
+  ${If} ${FileExists} "$INSTDIR"
+    DetailPrint "Attempting removal method 2: CMD RD command..."
+    nsExec::ExecToStack 'cmd /c "rd /s /q "$INSTDIR""'
+    Pop $0
+    Pop $1
+  ${EndIf}
+  
+  ${If} ${FileExists} "$INSTDIR"
+    DetailPrint "Attempting removal method 3: PowerShell Remove-Item..."
+    nsExec::ExecToStack 'powershell -Command "Remove-Item \"$INSTDIR\" -Recurse -Force -ErrorAction SilentlyContinue"'
+    Pop $0
+    Pop $1
+  ${EndIf}
+  
+  ${If} ${FileExists} "$INSTDIR"
+    DetailPrint "Final attempt: Schedule for removal on reboot..."
+    RMDir /r /REBOOTOK "$INSTDIR"
+    DetailPrint "WARNING: Some files will be removed on next system restart."
+  ${EndIf}
+  
+  ; Always recreate the installation directory
+  CreateDirectory "$INSTDIR"
+  
+  DetailPrint "Complete removal process finished. Directory prepared for fresh installation."
+FunctionEnd
 
-; Custom section to handle upgrade-specific logic
-!macro customRemoveFiles
-  ; Clean up old installation files that might cause conflicts
-  DetailPrint "Cleaning up previous installation..."
-  
-  ; Remove main executable with reboot if necessary
-  Delete /REBOOTOK "$INSTDIR\Lecture Logger.exe"
-  
-  ; Remove all DLLs and resources
-  Delete /REBOOTOK "$INSTDIR\*.dll"
-  Delete /REBOOTOK "$INSTDIR\*.pak"
-  Delete /REBOOTOK "$INSTDIR\*.bin"
-  Delete /REBOOTOK "$INSTDIR\*.dat"
-  
-  ; Remove resources directory
-  RMDir /r /REBOOTOK "$INSTDIR\resources"
-  
-  ; Remove locales directory
-  RMDir /r /REBOOTOK "$INSTDIR\locales"
-  
-  ; Remove python-runtime directory
-  RMDir /r /REBOOTOK "$INSTDIR\python-runtime"
+; Custom installer completion (runs after files are installed)
+!macro customInstall
+  ; Nothing to do here - all cleanup was done before installation
+  DetailPrint "Installation files copied successfully."
 !macroend
