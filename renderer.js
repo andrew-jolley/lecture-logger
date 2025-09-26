@@ -2143,7 +2143,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     logBasic('info', 'Help button clicked');
     
     // Open GitHub issues page in external browser
-    shell.openExternal('https://github.com/andrew-jolley/lecture-logger/issues/new');
+    shell.openExternal('https://github.com/andrew-jolley/lecture-logger/issues/new?template=bug_report.md');
   });
   
   // Info button to show About modal - moved inside DOMContentLoaded

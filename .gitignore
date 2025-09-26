@@ -1,3 +1,4 @@
 /dist
 /node_modules
 /python-runtime
+.DS_Store
