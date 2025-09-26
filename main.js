@@ -310,6 +310,17 @@ function createWindow() {
   // Don't show main window until app signals it's ready
   mainWindow.once('ready-to-show', () => {
     console.log('Main window ready, but keeping hidden until app initialization complete');
+    mainWindow.show();
+    // On Windows, force focus and bring to front to fix input bug
+    if (process.platform === 'win32') {
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.focus();
+          mainWindow.setAlwaysOnTop(true);
+          mainWindow.setAlwaysOnTop(false);
+        }
+      }, 200);
+    }
   });
 
   // Load cached UI files if available, otherwise use bundled files
