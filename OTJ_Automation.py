@@ -132,8 +132,10 @@ def findInCol(term,col,style):      #function to find a term in a column and ret
     
 
 def findFirstBlankRow():    #finds the first blank row in the .xlsx where the data should be written. Note, this is the first row with no data, not the first with no formatting (thats ~2000). 
-    return int((findInCol("None",3,1)[0][:-2]))    #uses find in col, passed 'None' and asks for column 3 style 1, which returns the coordinates. 
-
+    try:
+        return int((findInCol("None",3,1)[0][:-2]))    #uses find in col, passed 'None' and asks for column 3 style 1, which returns the coordinates. 
+    except Exception as e:
+        fatal(f"findFirstBlankRow() - Fatal error - {e}")
 
 #
 #
