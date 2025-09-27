@@ -18,16 +18,22 @@ def path():
 
 
 def wrtTXT(file,line):  #function to write txt to a requested txt file.
-    filename = open(file, 'a') #open file in append mode
-    filename.write(line) # write the specified line to the end of the file
-    filename.close() # close file 
+    try:
+        filename = open(file, 'a') #open file in append mode
+        filename.write(line) # write the specified line to the end of the file
+        filename.close() # close file 
+    except Exception as e:
+        fatal(f"wrtTXT() - Fatal error - {e}")
     
     
 def readTXT(name): #reads text files
-    filename = open(name, 'r') #open file in read mode
-    contents = filename.readlines() # read all content from the file and store in var
-    filename.close() # close file
-    return contents #return the data
+    try:
+        filename = open(name, 'r') #open file in read mode
+        contents = filename.readlines() # read all content from the file and store in var
+        filename.close() # close file
+        return contents #return the data
+    except Exception as e:
+        fatal(f"readTXT() - Fatal error - {e}")
 
 
 def findSetting(name):      #function to find a specified setting from settings.txt
