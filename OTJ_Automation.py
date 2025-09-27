@@ -369,7 +369,7 @@ def addKSB():       #add KSBs to rowData
             if KSB:
                 print("KSBs received")
             else:
-                fatal(f"addKSB() - Unable to get KSBs for module code provided - {e}")
+                fatal("addKSB() - Unable to get KSBs for module code provided")
             rowData.append(KSB)     #add to rowData
     except Exception as e:  #error handling
         fatal(f"addKSB() - Unable to get KSBs for module code provided - {e}")
