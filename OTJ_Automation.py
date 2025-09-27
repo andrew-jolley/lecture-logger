@@ -91,12 +91,16 @@ def readCell(row,col): #reads cell with specific coordinate
     
 
 def readDate(row):      #specific function to read a date from a specified row
-    contents = readCell(row,3)      #uses readCell() to find the data
-    if "NO DATA" in contents:   #readCell returns a long string including 'NO DATA'. If present, return the contents as is. 
-        return contents
-    else:   #if there is data, then remove the time that Excel automatically adds to the cell
-        contents = contents[:-9]
-    return contents     #return
+    try: 
+        contents = readCell(row,3)      #uses readCell() to find the data
+        if "NO DATA" in contents:   #readCell returns a long string including 'NO DATA'. If present, return the contents as is. 
+            return contents
+        else:   #if there is data, then remove the time that Excel automatically adds to the cell
+            contents = contents[:-9]
+        return contents     #return
+
+    except Exception as e:
+        fatal(f"readCell() - Fatal error - {e}")
 
 
 
