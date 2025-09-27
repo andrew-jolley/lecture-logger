@@ -577,27 +577,31 @@ def findInRowKSB(term,style):   #as above, but using sheet Broadcast & Media KSB
     
     
 def findInColKSB(term,col,style):       #as seen in findInCol(), but using the sheet with the KSBs defined
-    wb = load_workbook(path)
-    sheet = wb["Broadcast & Media KSBs"]    
-    
-    output = []
-    total = 0
-    
-    for iterateRows in range (1, sheet.max_row):
-        contents = (sheet.cell(row=iterateRows, column=col).value)
-        contents = str(contents)
+    try: 
+        wb = load_workbook(path)
+        sheet = wb["Broadcast & Media KSBs"]    
         
-        if term in contents: 
-            output.append(f"{iterateRows}/{col}")
-            total += 1
-                
-    if output and style == 1: 
-        return output
-    elif output and style == 2: 
-        return total
-    else:
-        return "Not found"
-    
+        output = []
+        total = 0
+        
+        for iterateRows in range (1, sheet.max_row):
+            contents = (sheet.cell(row=iterateRows, column=col).value)
+            contents = str(contents)
+            
+            if term in contents: 
+                output.append(f"{iterateRows}/{col}")
+                total += 1
+                    
+        if output and style == 1: 
+            return output
+        elif output and style == 2: 
+            return total
+        else:
+            return "Not found"
+        
+    except Exception as e:   #fatal code if req
+        fatal(f"findInColKSB() - Fatal Error -  {e}")
+        
     
 def getKSB(module):  #gets KSBs given a module
     
