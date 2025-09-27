@@ -137,7 +137,7 @@ def writeRow():     #function to write rowData list to excel file. This is run a
     rowData = []    #reset row data list to avoid duplicate entries
     
     print("This data has now been added to the log.")   #print status message
-    log(f"writeRow() - Wrote rowData to {path}",1)      #add to log
+    log(f"writeRow() - Wrote 'rowData' list to '{path}'",1)      #add to log
     
 
 def addDate():  #function to get the required date from the user
