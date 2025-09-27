@@ -533,16 +533,21 @@ def addConfirmation():
 ## READ EXCEL FOR KSBs ##
 
 def readCellKSB(row,col): #as above, but specific to KSB sheet
-    wb = load_workbook(path)
-    sheet = wb["Broadcast & Media KSBs"]#KSB data sheet
+    try: 
+        wb = load_workbook(path)
+        sheet = wb["Broadcast & Media KSBs"]#KSB data sheet
+        
+        contents = (sheet.cell(row=row, column=col).value)
+        contents = str(contents)
+        
+        if contents == "None":
+            return(f"NO DATA IN CELL {col}/{row}")
+        else:
+            return(contents)
     
-    contents = (sheet.cell(row=row, column=col).value)
-    contents = str(contents)
-    
-    if contents == "None":
-        return(f"NO DATA IN CELL {col}/{row}")
-    else:
-        return(contents)
+    except Exception as e:   #fatal code if req
+        fatal(f"readCellKSB() - Fatal Error -  {e}")
+        
     
     
 def findInRowKSB(term,style):   #as above, but using sheet Broadcast & Media KSBs
