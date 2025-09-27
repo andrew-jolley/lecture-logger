@@ -551,25 +551,29 @@ def readCellKSB(row,col): #as above, but specific to KSB sheet
     
     
 def findInRowKSB(term,style):   #as above, but using sheet Broadcast & Media KSBs
-    wb = load_workbook(path)
-    sheet = wb["Broadcast & Media KSBs"]    
-    
-    output = []
-    total = 0
-    for iterateCols in range (3, sheet.max_column+1):   #12 - added +1 to index range to allow for index 20 (column S). Else was getting list index OOR
-        contents = (sheet.cell(row=2, column=iterateCols).value)
-        contents = str(contents)
+    try: 
+        wb = load_workbook(path)
+        sheet = wb["Broadcast & Media KSBs"]    
         
-        if term in contents: 
-            output.append(f"2/{iterateCols}")
-            total += 1
+        output = []
+        total = 0
+        for iterateCols in range (3, sheet.max_column+1):   #12 - added +1 to index range to allow for index 20 (column S). Else was getting list index OOR
+            contents = (sheet.cell(row=2, column=iterateCols).value)
+            contents = str(contents)
             
-    if output and style == 1: 
-        return output
-    elif output and style == 2: 
-        return total
-    else:
-        return "Not found"
+            if term in contents: 
+                output.append(f"2/{iterateCols}")
+                total += 1
+                
+        if output and style == 1: 
+            return output
+        elif output and style == 2: 
+            return total
+        else:
+            return "Not found"
+        
+    except Exception as e:   #fatal code if req
+        fatal(f"findInRowKSB() - Fatal Error -  {e}")
     
     
 def findInColKSB(term,col,style):       #as seen in findInCol(), but using the sheet with the KSBs defined
