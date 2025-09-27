@@ -336,7 +336,7 @@ def addDescription():       #function to add description of activity to rowData
         if line != "":  #if input is valid
             rowData.append(line)    #add input to rowData
             print("\n\nCool, we'll add that to the OTJ log.")   #print and log
-            log("addDescription - Added description to rowData list.",1)
+            log("addDescription() - Added description to 'rowData' list.",1)
         else:   #if invalid
             print("\n\nSorry, that's invalid...")
             log(f"addDescription() - Invalid input '{line}'",2)
