@@ -173,20 +173,24 @@ def writeRow():     #function to write rowData list to excel file. This is run a
 def addDate():  #function to get the required date from the user
     global date     #global to be used in addAcadYear()
     
-    date = input("Enter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
-    date = date.lower()     #enter required date and format
+    try:
+        date = input("Enter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
+        date = date.lower()     #enter required date and format
+        
+        if date == "today":     #user is able to enter 'today' to get the current date
+            date = (datetime.now()).strftime("%d/%m/%Y")    #format date as required
+        elif len(date.split("/")) != 3 or len(date.split("/")[2]) != 4 or len(date.split("/")[1]) != 2 or len(date.split("/")[0]) != 2:
+            print("Date is not valid. Must be in form DD/MM/YYYY\n")
+            addDate()
+            return
+        
+        rowData.append(date)    #add to rowData list
     
-    if date == "today":     #user is able to enter 'today' to get the current date
-        date = (datetime.now()).strftime("%d/%m/%Y")    #format date as required
-    elif len(date.split("/")) != 3 or len(date.split("/")[2]) != 4 or len(date.split("/")[1]) != 2 or len(date.split("/")[0]) != 2:
-        print("Date is not valid. Must be in form DD/MM/YYYY\n")
-        addDate()
-        return
-    
-    rowData.append(date)    #add to rowData list
-
-    print(f"Got it, using '{date}'.")   #print status and log entry
-    log(f"addDate() - Added date:'{date}' to 'rowData' list",1)
+        print(f"Got it, using '{date}'.")   #print status and log entry
+        log(f"addDate() - Added date:'{date}' to 'rowData' list",1)
+        
+    except Exception as e:
+        fatal(f"addDate() - Fatal error - {e}")
 
 
 def addAcadYear():  #function to use global data var above and get the current academic year, e.g. 25/26
