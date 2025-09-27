@@ -365,9 +365,11 @@ def addDetails():       #function to add details of activity to rowData
 def addKSB():       #add KSBs to rowData
     try: 
         if rowData[4] != "Not applicable":      #only if module code provided
-            print(rowData[4])
             KSB = getKSB(rowData[4])    #use getKSB() to get the KSBs for the provided code
-            print("KSBs received")
+            if KSB:
+                print("KSBs received")
+            else:
+                fatal(f"addKSB() - Unable to get KSBs for module code provided - {e}")
             rowData.append(KSB)     #add to rowData
     except Exception as e:  #error handling
         fatal(f"addKSB() - Unable to get KSBs for module code provided - {e}")
