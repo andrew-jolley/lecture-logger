@@ -100,31 +100,35 @@ def readDate(row):      #specific function to read a date from a specified row
         return contents     #return
 
     except Exception as e:
-        fatal(f"readCell() - Fatal error - {e}")
+        fatal(f"readDate() - Fatal error - {e}")
 
 
 
 def findInCol(term,col,style):      #function to find a term in a column and return as either the raw text, or total instances of the term
-    wb = load_workbook(path)    #open workbook and sheet
-    sheet = wb["OTJ log"]
-    
-    output = []     #define output list
-    total = 0       #define total variable
-    
-    for iterateRows in range (18, sheet.max_row):       #iterate through all rows
-        contents = (sheet.cell(row=iterateRows, column=col).value)      #read the cell contents 
-        contents = str(contents)    #convert to str
+    try: 
+        wb = load_workbook(path)    #open workbook and sheet
+        sheet = wb["OTJ log"]
         
-        if term in contents:        #if the term can be found in the cell's contents, then add the Cell's location to the output list
-            output.append(f"{iterateRows}/{col}")
-            total += 1      #used for style 2 (total instances). Increase total by 1
-                
-    if output and style == 1:   #return output list for style 1
-        return output
-    elif output and style == 2: #return total count for style 2
-        return total
-    else:
-        return "Not found"  #if not found, return not found
+        output = []     #define output list
+        total = 0       #define total variable
+        
+        for iterateRows in range (18, sheet.max_row):       #iterate through all rows
+            contents = (sheet.cell(row=iterateRows, column=col).value)      #read the cell contents 
+            contents = str(contents)    #convert to str
+            
+            if term in contents:        #if the term can be found in the cell's contents, then add the Cell's location to the output list
+                output.append(f"{iterateRows}/{col}")
+                total += 1      #used for style 2 (total instances). Increase total by 1
+                    
+        if output and style == 1:   #return output list for style 1
+            return output
+        elif output and style == 2: #return total count for style 2
+            return total
+        else:
+            return "Not found"  #if not found, return not found
+    
+    except Exception as e:
+        fatal(f"findInCol() - Fatal error - {e}")
     
 
 def findFirstBlankRow():    #finds the first blank row in the .xlsx where the data should be written. Note, this is the first row with no data, not the first with no formatting (thats ~2000). 
