@@ -31,19 +31,22 @@ def readTXT(name): #reads text files
 
 
 def findSetting(name):      #function to find a specified setting from settings.txt
-    file = "Backend Files (Hidden)/settings.txt"    #specify file
+    try:
+        file = "Backend Files (Hidden)/settings.txt"    #specify file
+        
+        contents = readTXT(file)    #get all data in the above file
+        name = f"{name}:"   #add a colon to the name specified when calling this function
+        
+        for i in range (len(contents)):     #loop for length of txt file
+            if (removeNewLines(contents[i])) == (removeNewLines(name)):     #if name of setting asked for is == the setting found during iteraton
+                line = i    #set the line number as i to specifiy the line the name of the setting is found on 
+        
+        output = (contents[line+1]).replace("\n","")    #set output as the line of the setting name +1 (i.e. the setting option)
     
-    contents = readTXT(file)    #get all data in the above file
-    name = f"{name}:"   #add a colon to the name specified when calling this function
-    
-    for i in range (len(contents)):     #loop for length of txt file
-        if (removeNewLines(contents[i])) == (removeNewLines(name)):     #if name of setting asked for is == the setting found during iteraton
-            line = i    #set the line number as i to specifiy the line the name of the setting is found on 
-    
-    output = (contents[line+1]).replace("\n","")    #set output as the line of the setting name +1 (i.e. the setting option)
-
-    return output   #return the output
-    
+        return output   #return the output
+    except Exception as e: 
+        fatal(f"findSetting() - Fatal error - {e}")
+        
 
 def getInitNotes():     #function to get the init notes from the settings.txt
     received = findSetting("Init Notes")    #uses findSetting() to get the specified init notes
