@@ -137,7 +137,7 @@ def writeRow():     #function to write rowData list to excel file. This is run a
     rowData = []    #reset row data list to avoid duplicate entries
     
     print("This data has now been added to the log.")   #print status message
-    log(f"writeRow() - Wrote rowData to {path}",1)      #add to log
+    log(f"writeRow() - Wrote 'rowData' list to '{path}'",1)      #add to log
     
 
 def addDate():  #function to get the required date from the user
@@ -336,7 +336,7 @@ def addDescription():       #function to add description of activity to rowData
         if line != "":  #if input is valid
             rowData.append(line)    #add input to rowData
             print("\n\nCool, we'll add that to the OTJ log.")   #print and log
-            log("addDescription - Added description to rowData list.",1)
+            log("addDescription() - Added description to 'rowData' list.",1)
         else:   #if invalid
             print("\n\nSorry, that's invalid...")
             log(f"addDescription() - Invalid input '{line}'",2)
@@ -356,7 +356,7 @@ def addDetails():       #function to add details of activity to rowData
         else:   #else, restart function
             print("\n\nSorry, this is a required field...")
             log(f"addDetails() - Invalid input - '{line}'")
-            addDetails()    
+            addDetails()
              
     except Exception as e:      #error handling
         fatal(f"addDetails() - Fatal error - {e}")
@@ -365,9 +365,11 @@ def addDetails():       #function to add details of activity to rowData
 def addKSB():       #add KSBs to rowData
     try: 
         if rowData[4] != "Not applicable":      #only if module code provided
-            print(rowData[4])
             KSB = getKSB(rowData[4])    #use getKSB() to get the KSBs for the provided code
-            print("KSBs received")
+            if KSB:
+                print("KSBs received")
+            else:
+                fatal("addKSB() - Unable to get KSBs for module code provided")
             rowData.append(KSB)     #add to rowData
     except Exception as e:  #error handling
         fatal(f"addKSB() - Unable to get KSBs for module code provided - {e}")
@@ -515,8 +517,7 @@ def findInRowKSB(term,style):   #as above, but using sheet Broadcast & Media KSB
     
     output = []
     total = 0
-    
-    for iterateCols in range (3, sheet.max_column):
+    for iterateCols in range (3, sheet.max_column+1):   #12 - added +1 to index range to allow for index 20 (column S). Else was getting list index OOR
         contents = (sheet.cell(row=2, column=iterateCols).value)
         contents = str(contents)
         
@@ -565,7 +566,6 @@ def getKSB(module):  #gets KSBs given a module
     fullKSB = []
     
     received = findInRowKSB(module,1)   #find in KSB sheet header row the column which matches the required module code. 
-    
     column = (str(received[0]))     #string
     column = column.split("/")  #split by /
     column = int(column[1])     #set the column number as int for later use. 
