@@ -604,31 +604,34 @@ def findInColKSB(term,col,style):       #as seen in findInCol(), but using the s
         
     
 def getKSB(module):  #gets KSBs given a module
-    
-    module = module.upper()     #input validation
-    
-    print(f"\nGetting KSBs for module {module} - please wait...")    #waiting message
-    
-    rowsWithX = []      #init lists
-    fullKSB = []
-    
-    received = findInRowKSB(module,1)   #find in KSB sheet header row the column which matches the required module code. 
-    column = (str(received[0]))     #string
-    column = column.split("/")  #split by /
-    column = int(column[1])     #set the column number as int for later use. 
-    
-    rowsWithXOutput = findInColKSB("x", column, 1)  #check any rows in the column found above for 'x', denoting they are linked to the inputted module. 
 
-    for item in rowsWithXOutput:    
-        parts = item.split("/")   # Split the string at '/'
-        number_after_slash = parts[0]   # Take the part after the slash
-        rowsWithX.append(number_after_slash)  # Add it to the new list
-            
-    for item in rowsWithX:
-        fullKSB.append(readCellKSB(int(item),2)[:2])
+    try: 
+        module = module.upper()     #input validation
         
-    return str(",".join(fullKSB))
+        print(f"\nGetting KSBs for module {module} - please wait...")    #waiting message
+        
+        rowsWithX = []      #init lists
+        fullKSB = []
+        
+        received = findInRowKSB(module,1)   #find in KSB sheet header row the column which matches the required module code. 
+        column = (str(received[0]))     #string
+        column = column.split("/")  #split by /
+        column = int(column[1])     #set the column number as int for later use. 
+        
+        rowsWithXOutput = findInColKSB("x", column, 1)  #check any rows in the column found above for 'x', denoting they are linked to the inputted module. 
+    
+        for item in rowsWithXOutput:    
+            parts = item.split("/")   # Split the string at '/'
+            number_after_slash = parts[0]   # Take the part after the slash
+            rowsWithX.append(number_after_slash)  # Add it to the new list
+                
+        for item in rowsWithX:
+            fullKSB.append(readCellKSB(int(item),2)[:2])
+            
+        return str(",".join(fullKSB))
 
+    except Exception as e:   #fatal code if req
+        fatal(f"getKSB() - Fatal Error -  {e}")
 
 #
 #
