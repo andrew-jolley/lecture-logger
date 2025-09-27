@@ -149,21 +149,25 @@ def findFirstBlankRow():    #finds the first blank row in the .xlsx where the da
 def writeRow():     #function to write rowData list to excel file. This is run after all the required info from the below functions has been collated. 
     global rowData  #global to be used in the other functions below
     
-    print("\nAdding this data to the log. Please wait...")    #status message to user
-
-    wb = load_workbook(path)    #open workbook
-    sheet = wb["OTJ log"]   #open sheet
+    try:
+        print("\nAdding this data to the log. Please wait...")    #status message to user
     
-    row = findFirstBlankRow()    #get the first blank row available
+        wb = load_workbook(path)    #open workbook
+        sheet = wb["OTJ log"]   #open sheet
+        
+        row = findFirstBlankRow()    #get the first blank row available
+        
+        for col, value in enumerate(rowData, start=3):  # start=1 means column A
+            sheet.cell(row=row, column=col, value=value)
+        
+        wb.save(path)   #save file
+        rowData = []    #reset row data list to avoid duplicate entries
+        
+        print("This data has now been added to the log.")   #print status message
+        log(f"writeRow() - Wrote 'rowData' list to '{path}'",1)      #add to log
     
-    for col, value in enumerate(rowData, start=3):  # start=1 means column A
-        sheet.cell(row=row, column=col, value=value)
-    
-    wb.save(path)   #save file
-    rowData = []    #reset row data list to avoid duplicate entries
-    
-    print("This data has now been added to the log.")   #print status message
-    log(f"writeRow() - Wrote 'rowData' list to '{path}'",1)      #add to log
+    except Exception as e:
+        fatal(f"writeRow() - Fatal error - {e}")
     
 
 def addDate():  #function to get the required date from the user
