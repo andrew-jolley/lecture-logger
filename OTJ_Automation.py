@@ -13,45 +13,58 @@ def path():
     try: 
         path = readTXT(name)[0].replace("\n","")    #set path as the name specified in the txt file
     except Exception:   #error handline
-        fatal(f"In function 'path()' - Cannot find '{name}'")   #this error is fatal, so fatal() is used
+        fatal(f"path() - Cannot find '{name}'")   #this error is fatal, so fatal() is used
     return path     #return path (will be blank due to path = "" if there is exception)
 
 
 def wrtTXT(file,line):  #function to write txt to a requested txt file.
-    filename = open(file, 'a') #open file in append mode
-    filename.write(line) # write the specified line to the end of the file
-    filename.close() # close file 
+    try:
+        filename = open(file, 'a') #open file in append mode
+        filename.write(line) # write the specified line to the end of the file
+        filename.close() # close file 
+    except Exception as e:
+        fatal(f"wrtTXT() - Fatal error - {e}")
     
     
 def readTXT(name): #reads text files
-    filename = open(name, 'r') #open file in read mode
-    contents = filename.readlines() # read all content from the file and store in var
-    filename.close() # close file
-    return contents #return the data
+    try:
+        filename = open(name, 'r') #open file in read mode
+        contents = filename.readlines() # read all content from the file and store in var
+        filename.close() # close file
+        return contents #return the data
+    except Exception as e:
+        fatal(f"readTXT() - Fatal error - {e}")
 
 
 def findSetting(name):      #function to find a specified setting from settings.txt
-    file = "Backend Files (Hidden)/settings.txt"    #specify file
+    try:
+        file = "Backend Files (Hidden)/settings.txt"    #specify file
+        
+        contents = readTXT(file)    #get all data in the above file
+        name = f"{name}:"   #add a colon to the name specified when calling this function
+        
+        for i in range (len(contents)):     #loop for length of txt file
+            if (removeNewLines(contents[i])) == (removeNewLines(name)):     #if name of setting asked for is == the setting found during iteraton
+                line = i    #set the line number as i to specifiy the line the name of the setting is found on 
+        
+        output = (contents[line+1]).replace("\n","")    #set output as the line of the setting name +1 (i.e. the setting option)
     
-    contents = readTXT(file)    #get all data in the above file
-    name = f"{name}:"   #add a colon to the name specified when calling this function
-    
-    for i in range (len(contents)):     #loop for length of txt file
-        if (removeNewLines(contents[i])) == (removeNewLines(name)):     #if name of setting asked for is == the setting found during iteraton
-            line = i    #set the line number as i to specifiy the line the name of the setting is found on 
-    
-    output = (contents[line+1]).replace("\n","")    #set output as the line of the setting name +1 (i.e. the setting option)
-
-    return output   #return the output
-    
+        return output   #return the output
+    except Exception as e: 
+        fatal(f"findSetting() - Fatal error - {e}")
+        
 
 def getInitNotes():     #function to get the init notes from the settings.txt
-    received = findSetting("Init Notes")    #uses findSetting() to get the specified init notes
-    
-    receivedSplit = received.replace("/","\n")      #replace '/' in the txt file with '\n' to format better in CLI
-    
-    return receivedSplit    #return the notes
+    try: 
+        received = findSetting("Init Notes")    #uses findSetting() to get the specified init notes
+        
+        receivedSplit = received.replace("/","\n")      #replace '/' in the txt file with '\n' to format better in CLI
+        
+        return receivedSplit    #return the notes
 
+    except Exception as e:
+        fatal(f"getInitNotes() - Fatal Error - {e}")
+        
 #
 #
 #
@@ -62,54 +75,67 @@ def getInitNotes():     #function to get the init notes from the settings.txt
 ## READ EXCEL FUNCTIONS ##
 
 def readCell(row,col): #reads cell with specific coordinate
-    wb = load_workbook(path) #open file
-    sheet = wb["OTJ log"] #set active sheet 
-    
-    contents = (sheet.cell(row=row, column=col).value) #get all data from the row and col specified
-    contents = str(contents) #convert data to string for processing
-    
-    if contents == "None": #return data if valid
-        return(f"NO DATA IN CELL {col}/{row}")
-    else:
-        return(contents)
+    try: 
+        wb = load_workbook(path) #open file
+        sheet = wb["OTJ log"] #set active sheet 
+        
+        contents = (sheet.cell(row=row, column=col).value) #get all data from the row and col specified
+        contents = str(contents) #convert data to string for processing
+        
+        if contents == "None": #return data if valid
+            return(f"NO DATA IN CELL {col}/{row}")
+        else:
+            return(contents)
+    except Exception as e:
+        fatal(f"readCell() - Fatal error - {e}")
     
 
 def readDate(row):      #specific function to read a date from a specified row
-    contents = readCell(row,3)      #uses readCell() to find the data
-    if "NO DATA" in contents:   #readCell returns a long string including 'NO DATA'. If present, return the contents as is. 
-        return contents
-    else:   #if there is data, then remove the time that Excel automatically adds to the cell
-        contents = contents[:-9]
-    return contents     #return
+    try: 
+        contents = readCell(row,3)      #uses readCell() to find the data
+        if "NO DATA" in contents:   #readCell returns a long string including 'NO DATA'. If present, return the contents as is. 
+            return contents
+        else:   #if there is data, then remove the time that Excel automatically adds to the cell
+            contents = contents[:-9]
+        return contents     #return
+
+    except Exception as e:
+        fatal(f"readDate() - Fatal error - {e}")
 
 
 
 def findInCol(term,col,style):      #function to find a term in a column and return as either the raw text, or total instances of the term
-    wb = load_workbook(path)    #open workbook and sheet
-    sheet = wb["OTJ log"]
-    
-    output = []     #define output list
-    total = 0       #define total variable
-    
-    for iterateRows in range (18, sheet.max_row):       #iterate through all rows
-        contents = (sheet.cell(row=iterateRows, column=col).value)      #read the cell contents 
-        contents = str(contents)    #convert to str
+    try: 
+        wb = load_workbook(path)    #open workbook and sheet
+        sheet = wb["OTJ log"]
         
-        if term in contents:        #if the term can be found in the cell's contents, then add the Cell's location to the output list
-            output.append(f"{iterateRows}/{col}")
-            total += 1      #used for style 2 (total instances). Increase total by 1
-                
-    if output and style == 1:   #return output list for style 1
-        return output
-    elif output and style == 2: #return total count for style 2
-        return total
-    else:
-        return "Not found"  #if not found, return not found
+        output = []     #define output list
+        total = 0       #define total variable
+        
+        for iterateRows in range (18, sheet.max_row):       #iterate through all rows
+            contents = (sheet.cell(row=iterateRows, column=col).value)      #read the cell contents 
+            contents = str(contents)    #convert to str
+            
+            if term in contents:        #if the term can be found in the cell's contents, then add the Cell's location to the output list
+                output.append(f"{iterateRows}/{col}")
+                total += 1      #used for style 2 (total instances). Increase total by 1
+                    
+        if output and style == 1:   #return output list for style 1
+            return output
+        elif output and style == 2: #return total count for style 2
+            return total
+        else:
+            return "Not found"  #if not found, return not found
+    
+    except Exception as e:
+        fatal(f"findInCol() - Fatal error - {e}")
     
 
 def findFirstBlankRow():    #finds the first blank row in the .xlsx where the data should be written. Note, this is the first row with no data, not the first with no formatting (thats ~2000). 
-    return int((findInCol("None",3,1)[0][:-2]))    #uses find in col, passed 'None' and asks for column 3 style 1, which returns the coordinates. 
-
+    try:
+        return int((findInCol("None",3,1)[0][:-2]))    #uses find in col, passed 'None' and asks for column 3 style 1, which returns the coordinates. 
+    except Exception as e:
+        fatal(f"findFirstBlankRow() - Fatal error - {e}")
 
 #
 #
@@ -123,40 +149,48 @@ def findFirstBlankRow():    #finds the first blank row in the .xlsx where the da
 def writeRow():     #function to write rowData list to excel file. This is run after all the required info from the below functions has been collated. 
     global rowData  #global to be used in the other functions below
     
-    print("\nAdding this data to the log. Please wait...")    #status message to user
-
-    wb = load_workbook(path)    #open workbook
-    sheet = wb["OTJ log"]   #open sheet
+    try:
+        print("\nAdding this data to the log. Please wait...")    #status message to user
     
-    row = findFirstBlankRow()    #get the first blank row available
+        wb = load_workbook(path)    #open workbook
+        sheet = wb["OTJ log"]   #open sheet
+        
+        row = findFirstBlankRow()    #get the first blank row available
+        
+        for col, value in enumerate(rowData, start=3):  # start=1 means column A
+            sheet.cell(row=row, column=col, value=value)
+        
+        wb.save(path)   #save file
+        rowData = []    #reset row data list to avoid duplicate entries
+        
+        print("This data has now been added to the log.")   #print status message
+        log(f"writeRow() - Wrote 'rowData' list to '{path}'",1)      #add to log
     
-    for col, value in enumerate(rowData, start=3):  # start=1 means column A
-        sheet.cell(row=row, column=col, value=value)
-    
-    wb.save(path)   #save file
-    rowData = []    #reset row data list to avoid duplicate entries
-    
-    print("This data has now been added to the log.")   #print status message
-    log(f"writeRow() - Wrote 'rowData' list to '{path}'",1)      #add to log
+    except Exception as e:
+        fatal(f"writeRow() - Fatal error - {e}")
     
 
 def addDate():  #function to get the required date from the user
     global date     #global to be used in addAcadYear()
     
-    date = input("Enter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
-    date = date.lower()     #enter required date and format
+    try:
+        date = input("Enter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
+        date = date.lower()     #enter required date and format
+        
+        if date == "today":     #user is able to enter 'today' to get the current date
+            date = (datetime.now()).strftime("%d/%m/%Y")    #format date as required
+        elif len(date.split("/")) != 3 or len(date.split("/")[2]) != 4 or len(date.split("/")[1]) != 2 or len(date.split("/")[0]) != 2:
+            print("Date is not valid. Must be in form DD/MM/YYYY\n")
+            addDate()
+            return
+        
+        rowData.append(date)    #add to rowData list
     
-    if date == "today":     #user is able to enter 'today' to get the current date
-        date = (datetime.now()).strftime("%d/%m/%Y")    #format date as required
-    elif len(date.split("/")) != 3 or len(date.split("/")[2]) != 4 or len(date.split("/")[1]) != 2 or len(date.split("/")[0]) != 2:
-        print("Date is not valid. Must be in form DD/MM/YYYY\n")
-        addDate()
-        return
-    
-    rowData.append(date)    #add to rowData list
-
-    print(f"Got it, using '{date}'.")   #print status and log entry
-    log(f"addDate() - Added date:'{date}' to 'rowData' list",1)
+        print(f"Got it, using '{date}'.")   #print status and log entry
+        log(f"addDate() - Added date:'{date}' to 'rowData' list",1)
+        
+    except Exception as e:
+        fatal(f"addDate() - Fatal error - {e}")
 
 
 def addAcadYear():  #function to use global data var above and get the current academic year, e.g. 25/26
@@ -499,89 +533,105 @@ def addConfirmation():
 ## READ EXCEL FOR KSBs ##
 
 def readCellKSB(row,col): #as above, but specific to KSB sheet
-    wb = load_workbook(path)
-    sheet = wb["Broadcast & Media KSBs"]#KSB data sheet
+    try: 
+        wb = load_workbook(path)
+        sheet = wb["Broadcast & Media KSBs"]#KSB data sheet
+        
+        contents = (sheet.cell(row=row, column=col).value)
+        contents = str(contents)
+        
+        if contents == "None":
+            return(f"NO DATA IN CELL {col}/{row}")
+        else:
+            return(contents)
     
-    contents = (sheet.cell(row=row, column=col).value)
-    contents = str(contents)
-    
-    if contents == "None":
-        return(f"NO DATA IN CELL {col}/{row}")
-    else:
-        return(contents)
+    except Exception as e:   #fatal code if req
+        fatal(f"readCellKSB() - Fatal Error -  {e}")
+        
     
     
 def findInRowKSB(term,style):   #as above, but using sheet Broadcast & Media KSBs
-    wb = load_workbook(path)
-    sheet = wb["Broadcast & Media KSBs"]    
-    
-    output = []
-    total = 0
-    for iterateCols in range (3, sheet.max_column+1):   #12 - added +1 to index range to allow for index 20 (column S). Else was getting list index OOR
-        contents = (sheet.cell(row=2, column=iterateCols).value)
-        contents = str(contents)
+    try: 
+        wb = load_workbook(path)
+        sheet = wb["Broadcast & Media KSBs"]    
         
-        if term in contents: 
-            output.append(f"2/{iterateCols}")
-            total += 1
+        output = []
+        total = 0
+        for iterateCols in range (3, sheet.max_column+1):   #12 - added +1 to index range to allow for index 20 (column S). Else was getting list index OOR
+            contents = (sheet.cell(row=2, column=iterateCols).value)
+            contents = str(contents)
             
-    if output and style == 1: 
-        return output
-    elif output and style == 2: 
-        return total
-    else:
-        return "Not found"
+            if term in contents: 
+                output.append(f"2/{iterateCols}")
+                total += 1
+                
+        if output and style == 1: 
+            return output
+        elif output and style == 2: 
+            return total
+        else:
+            return "Not found"
+        
+    except Exception as e:   #fatal code if req
+        fatal(f"findInRowKSB() - Fatal Error -  {e}")
     
     
 def findInColKSB(term,col,style):       #as seen in findInCol(), but using the sheet with the KSBs defined
-    wb = load_workbook(path)
-    sheet = wb["Broadcast & Media KSBs"]    
-    
-    output = []
-    total = 0
-    
-    for iterateRows in range (1, sheet.max_row):
-        contents = (sheet.cell(row=iterateRows, column=col).value)
-        contents = str(contents)
+    try: 
+        wb = load_workbook(path)
+        sheet = wb["Broadcast & Media KSBs"]    
         
-        if term in contents: 
-            output.append(f"{iterateRows}/{col}")
-            total += 1
-                
-    if output and style == 1: 
-        return output
-    elif output and style == 2: 
-        return total
-    else:
-        return "Not found"
-    
+        output = []
+        total = 0
+        
+        for iterateRows in range (1, sheet.max_row):
+            contents = (sheet.cell(row=iterateRows, column=col).value)
+            contents = str(contents)
+            
+            if term in contents: 
+                output.append(f"{iterateRows}/{col}")
+                total += 1
+                    
+        if output and style == 1: 
+            return output
+        elif output and style == 2: 
+            return total
+        else:
+            return "Not found"
+        
+    except Exception as e:   #fatal code if req
+        fatal(f"findInColKSB() - Fatal Error -  {e}")
+        
     
 def getKSB(module):  #gets KSBs given a module
-    
-    module = module.upper()     #input validation
-    
-    print(f"\nGetting KSBs for module {module} - please wait...")    #waiting message
-    
-    rowsWithX = []      #init lists
-    fullKSB = []
-    
-    received = findInRowKSB(module,1)   #find in KSB sheet header row the column which matches the required module code. 
-    column = (str(received[0]))     #string
-    column = column.split("/")  #split by /
-    column = int(column[1])     #set the column number as int for later use. 
-    
-    rowsWithXOutput = findInColKSB("x", column, 1)  #check any rows in the column found above for 'x', denoting they are linked to the inputted module. 
 
-    for item in rowsWithXOutput:    
-        parts = item.split("/")   # Split the string at '/'
-        number_after_slash = parts[0]   # Take the part after the slash
-        rowsWithX.append(number_after_slash)  # Add it to the new list
-            
-    for item in rowsWithX:
-        fullKSB.append(readCellKSB(int(item),2)[:2])
+    try: 
+        module = module.upper()     #input validation
         
-    return str(",".join(fullKSB))
+        print(f"\nGetting KSBs for module {module} - please wait...")    #waiting message
+        
+        rowsWithX = []      #init lists
+        fullKSB = []
+        
+        received = findInRowKSB(module,1)   #find in KSB sheet header row the column which matches the required module code. 
+        column = (str(received[0]))     #string
+        column = column.split("/")  #split by /
+        column = int(column[1])     #set the column number as int for later use. 
+        
+        rowsWithXOutput = findInColKSB("x", column, 1)  #check any rows in the column found above for 'x', denoting they are linked to the inputted module. 
+    
+        for item in rowsWithXOutput:    
+            parts = item.split("/")   # Split the string at '/'
+            number_after_slash = parts[0]   # Take the part after the slash
+            rowsWithX.append(number_after_slash)  # Add it to the new list
+                
+        for item in rowsWithX:
+            fullKSB.append(readCellKSB(int(item),2)[:2])
+            
+        return str(",".join(fullKSB))
 
+    except Exception as e:   #fatal code if req
+        fatal(f"getKSB() - Fatal Error -  {e}")
 
 #
 #
