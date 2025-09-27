@@ -75,16 +75,19 @@ def getInitNotes():     #function to get the init notes from the settings.txt
 ## READ EXCEL FUNCTIONS ##
 
 def readCell(row,col): #reads cell with specific coordinate
-    wb = load_workbook(path) #open file
-    sheet = wb["OTJ log"] #set active sheet 
-    
-    contents = (sheet.cell(row=row, column=col).value) #get all data from the row and col specified
-    contents = str(contents) #convert data to string for processing
-    
-    if contents == "None": #return data if valid
-        return(f"NO DATA IN CELL {col}/{row}")
-    else:
-        return(contents)
+    try: 
+        wb = load_workbook(path) #open file
+        sheet = wb["OTJ log"] #set active sheet 
+        
+        contents = (sheet.cell(row=row, column=col).value) #get all data from the row and col specified
+        contents = str(contents) #convert data to string for processing
+        
+        if contents == "None": #return data if valid
+            return(f"NO DATA IN CELL {col}/{row}")
+        else:
+            return(contents)
+    except Exception as e:
+        fatal(f"readCell() - Fatal error - {e}")
     
 
 def readDate(row):      #specific function to read a date from a specified row
