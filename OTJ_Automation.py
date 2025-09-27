@@ -49,12 +49,16 @@ def findSetting(name):      #function to find a specified setting from settings.
         
 
 def getInitNotes():     #function to get the init notes from the settings.txt
-    received = findSetting("Init Notes")    #uses findSetting() to get the specified init notes
-    
-    receivedSplit = received.replace("/","\n")      #replace '/' in the txt file with '\n' to format better in CLI
-    
-    return receivedSplit    #return the notes
+    try: 
+        received = findSetting("Init Notes")    #uses findSetting() to get the specified init notes
+        
+        receivedSplit = received.replace("/","\n")      #replace '/' in the txt file with '\n' to format better in CLI
+        
+        return receivedSplit    #return the notes
 
+    except Exception as e:
+        fatal(f"getInitNotes() - Fatal Error - {e}")
+        
 #
 #
 #
