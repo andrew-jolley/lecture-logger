@@ -356,7 +356,7 @@ def addDetails():       #function to add details of activity to rowData
         else:   #else, restart function
             print("\n\nSorry, this is a required field...")
             log(f"addDetails() - Invalid input - '{line}'")
-            addDetails()    
+            addDetails()
              
     except Exception as e:      #error handling
         fatal(f"addDetails() - Fatal error - {e}")
@@ -517,8 +517,7 @@ def findInRowKSB(term,style):   #as above, but using sheet Broadcast & Media KSB
     
     output = []
     total = 0
-    
-    for iterateCols in range (3, sheet.max_column):
+    for iterateCols in range (3, sheet.max_column+1):   #12 - added +1 to index range to allow for index 20 (column S). Else was getting list index OOR
         contents = (sheet.cell(row=2, column=iterateCols).value)
         contents = str(contents)
         
@@ -567,7 +566,6 @@ def getKSB(module):  #gets KSBs given a module
     fullKSB = []
     
     received = findInRowKSB(module,1)   #find in KSB sheet header row the column which matches the required module code. 
-    
     column = (str(received[0]))     #string
     column = column.split("/")  #split by /
     column = int(column[1])     #set the column number as int for later use. 
