@@ -13,7 +13,7 @@ def path():
     try: 
         path = readTXT(name)[0].replace("\n","")    #set path as the name specified in the txt file
     except Exception:   #error handline
-        fatal(f"In function 'path()' - Cannot find '{name}'")   #this error is fatal, so fatal() is used
+        fatal(f"path() - Cannot find '{name}'")   #this error is fatal, so fatal() is used
     return path     #return path (will be blank due to path = "" if there is exception)
 
 
