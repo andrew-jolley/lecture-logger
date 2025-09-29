@@ -2778,6 +2778,38 @@ document.addEventListener('DOMContentLoaded', async function() {
     appSettings.testVersion = '';
     localStorage.setItem('lectureLoggerSettings', JSON.stringify(appSettings));
   });
+
+  // Test Normal Update Modal
+  document.getElementById('devTestNormalUpdate').addEventListener('click', function() {
+    const testVersion = document.getElementById('devTestVersion').value.trim() || '9.9.9';
+    showUpdateModal(
+      testVersion,
+      `🎉 **Test Normal Update**\n\nThis is a test of the normal update system using version ${testVersion}.\n\n**Features in this test:**\n- Standard blue styling\n- "Maybe Later" button available\n- Normal close behavior\n- Standard "Download Update" button`,
+      'https://example.com/mac-download',
+      'https://example.com/win-download',
+      false // Critical = false
+    );
+    
+    // Close developer modal
+    const developerModal = bootstrap.Modal.getInstance(document.getElementById('developerModal'));
+    developerModal.hide();
+  });
+
+  // Test Critical Update Modal
+  document.getElementById('devTestCriticalUpdate').addEventListener('click', function() {
+    const testVersion = document.getElementById('devTestVersion').value.trim() || '9.9.9';
+    showUpdateModal(
+      testVersion,
+      `🚨 **CRITICAL SECURITY UPDATE - Test Mode**\n\nThis is a test of the critical update system using version ${testVersion}.\n\n**Features in this test:**\n- Red styling with pulsing border\n- No "Maybe Later" button\n- Admin password required to close\n- Red "Install Critical Update Now" button`,
+      'https://example.com/mac-download',
+      'https://example.com/win-download',
+      true // Critical = true
+    );
+    
+    // Close developer modal
+    const developerModal = bootstrap.Modal.getInstance(document.getElementById('developerModal'));
+    developerModal.hide();
+  });
   
   document.getElementById('devGithubDebug').addEventListener('click', function() {
     // Close developer modal first
