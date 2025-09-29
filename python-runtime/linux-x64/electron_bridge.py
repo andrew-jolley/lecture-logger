@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Electron Bridge for OTJ Automation
-Accepts JSON input from Electron app and processes it through the OTJ system
+Accepts JSON input from Electron app and processes it through the OTJ system - Credits Liam Shadwell
 """
 
 import json

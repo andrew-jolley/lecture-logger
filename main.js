@@ -160,6 +160,11 @@ function shouldUseCachedUI() {
 }
 
 function createSplashWindow() {
+  const path = require('path');
+  const iconPath = process.platform === 'win32' 
+    ? path.join(__dirname, 'lec_log_win.ico')
+    : path.join(__dirname, 'lec_log_mac.icns');
+    
   splashWindow = new BrowserWindow({
     width: 400,
     height: 300,
@@ -169,6 +174,7 @@ function createSplashWindow() {
     backgroundColor: '#667eea',
     resizable: false,
     title: 'Lecture Logger', // Fix for macOS Mission Control display
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -313,9 +319,15 @@ function createSplashWindow() {
 }
 
 function createWindow() {
+  const path = require('path');
+  const iconPath = process.platform === 'win32' 
+    ? path.join(__dirname, 'lec_log_win.ico')
+    : path.join(__dirname, 'lec_log_mac.icns');
+    
   mainWindow = new BrowserWindow({
     width: 900,
     height: 850,
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -526,9 +538,75 @@ async function downloadFile(url, filename) {
   });
 }
 
-app.whenReady().then(() => {
+// Installer cleanup function
+async function cleanupInstaller() {
+  try {
+    if (process.platform !== 'win32') {
+      return; // Only cleanup Windows installers
+    }
+    
+    const downloadsPath = path.join(os.homedir(), 'Downloads');
+    const packageJson = require('./package.json');
+    const version = packageJson.version;
+    const productName = packageJson.build.productName || packageJson.name;
+    
+    // Possible installer filenames based on our build configuration
+    const possibleInstallerNames = [
+      `${productName}-${version}-x64.exe`,
+      `Lecture Logger-${version}-x64.exe`,
+      `lecture-logger-${version}-x64.exe`
+    ];
+    
+    for (const installerName of possibleInstallerNames) {
+      const installerPath = path.join(downloadsPath, installerName);
+      
+      if (fs.existsSync(installerPath)) {
+        console.log(`Found installer: ${installerPath}`);
+        
+        // Show dialog asking user if they want to clean up
+        const result = await dialog.showMessageBox(mainWindow, {
+          type: 'question',
+          buttons: ['Yes, delete it', 'No, keep it'],
+          defaultId: 0,
+          title: 'Clean up installer?',
+          message: 'Installer cleanup',
+          detail: `Would you like to delete the installer file from your Downloads folder?\n\n${installerName}\n\nThis will help keep your Downloads folder tidy.`
+        });
+        
+        if (result.response === 0) {
+          try {
+            fs.unlinkSync(installerPath);
+            console.log(`Successfully deleted installer: ${installerPath}`);
+            
+            // Show success notification
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'Cleanup complete',
+              message: 'Installer file deleted successfully!',
+              detail: 'Your Downloads folder is now tidier.',
+              buttons: ['OK']
+            });
+          } catch (error) {
+            console.error('Failed to delete installer:', error);
+          }
+        }
+        
+        break; // Only process the first found installer
+      }
+    }
+  } catch (error) {
+    console.error('Error during installer cleanup:', error);
+  }
+}
+
+app.whenReady().then(async () => {
   createSplashWindow();
   createWindow();
+  
+  // Schedule installer cleanup after splash screen and initial setup
+  setTimeout(async () => {
+    await cleanupInstaller();
+  }, 8000); // 8 seconds after app startup (after splash screen)
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) {
