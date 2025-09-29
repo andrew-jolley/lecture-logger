@@ -174,7 +174,7 @@ def addDate():  #function to get the required date from the user
     global date     #global to be used in addAcadYear()
     
     try:
-        date = input("Enter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
+        date = input("\nEnter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
         date = date.lower()     #enter required date and format
         
         if date == "today":     #user is able to enter 'today' to get the current date
