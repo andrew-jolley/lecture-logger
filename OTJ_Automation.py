@@ -11,7 +11,7 @@ def path():
     name = "FilePath.txt"   #set name of File Path config txt file
     path = ""   #set path to blank string
     try: 
-        path = readTXT(name)[0].replace("\n","")    #set path as the name specified in the txt file
+        path = readTXT(name)[0].replace("\n","").replace('"','')    #set path as the name specified in the txt file
     except Exception:   #error handline
         fatal(f"path() - Cannot find '{name}'")   #this error is fatal, so fatal() is used
     return path     #return path (will be blank due to path = "" if there is exception)
@@ -174,7 +174,7 @@ def addDate():  #function to get the required date from the user
     global date     #global to be used in addAcadYear()
     
     try:
-        date = input("Enter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
+        date = input("\nEnter date of activity in format 'DD/MM/YYYY' (or enter 'today'):    ")
         date = date.lower()     #enter required date and format
         
         if date == "today":     #user is able to enter 'today' to get the current date
