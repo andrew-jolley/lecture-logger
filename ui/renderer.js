@@ -342,6 +342,7 @@ async function checkForUpdates(manualCheck = false, useTestVersion = false) {
     let releaseNotes = '';
     let macLink = '';
     let winLink = '';
+    let isCritical = false;
     let collectingReleaseNotes = false;
     
     // Parse the file format
@@ -376,12 +377,13 @@ async function checkForUpdates(manualCheck = false, useTestVersion = false) {
       macLink: macLink || 'none', 
       winLink: winLink || 'none',
       releaseNotesLength: releaseNotes.length,
+      isCritical,
       testMode: useTestVersion && appSettings.testVersion
     });
     
     if (isNewerVersion(latestVersion, versionToCheck)) {
-      logBasic('info', 'New version available', { latestVersion, versionToCheck, testMode: useTestVersion && appSettings.testVersion });
-      showUpdateModal(latestVersion, releaseNotes, macLink, winLink);
+      logBasic('info', 'New version available', { latestVersion, versionToCheck, isCritical, testMode: useTestVersion && appSettings.testVersion });
+      showUpdateModal(latestVersion, releaseNotes, macLink, winLink, isCritical);
     } else {
       logVerbose('info', 'No updates available', { latestVersion, versionToCheck, testMode: useTestVersion && appSettings.testVersion });
       if (manualCheck) {
@@ -696,7 +698,7 @@ function loadUIFiles() {
 }
 
 // Show update modal
-function showUpdateModal(version, releaseNotes, macLink, winLink) {
+function showUpdateModal(version, releaseNotes, macLink, winLink, isCritical = false) {
   try {
     // First, close any other open modals
     const allModals = document.querySelectorAll('.modal.show');
@@ -730,6 +732,9 @@ function showUpdateModal(version, releaseNotes, macLink, winLink) {
     const downloadButton = document.querySelector('#updateModal .btn-primary');
     const closeButton = document.querySelector('#updateModal .btn-close');
     const maybeButton = document.querySelector('#updateModal .btn-secondary');
+    const modalTitle = document.querySelector('#updateModalLabel');
+    const modalDialog = document.querySelector('#updateModal .modal-dialog');
+    const modalHeader = document.querySelector('#updateModal .modal-header');
     
     if (downloadButton && closeButton && maybeButton) {
       downloadButton.disabled = false;
@@ -737,6 +742,101 @@ function showUpdateModal(version, releaseNotes, macLink, winLink) {
       maybeButton.disabled = false;
       downloadButton.textContent = 'Download Update';
       downloadButton.className = 'btn btn-primary'; // Reset to original classes
+    }
+    
+    // Handle critical update styling and behavior
+    if (isCritical) {
+      // Style as critical update
+      if (modalTitle) {
+        modalTitle.innerHTML = '🚨 Critical Security Update Required!';
+        modalTitle.style.color = '#dc3545';
+      }
+      if (modalHeader) {
+        modalHeader.style.backgroundColor = '#f8d7da';
+        modalHeader.style.borderColor = '#f5c6cb';
+      }
+      if (modalDialog) {
+        modalDialog.classList.add('modal-dialog-critical');
+        // Add inline critical styling for enhanced visibility
+        modalDialog.style.border = '3px solid #dc3545';
+        modalDialog.style.borderRadius = '0.375rem'; // Match Bootstrap modal border radius
+        modalDialog.style.boxShadow = '0 0 20px rgba(220, 53, 69, 0.5)';
+        modalDialog.style.animation = 'criticalPulse 2s infinite';
+        
+        // Ensure CSS animation exists
+        if (!document.querySelector('#criticalUpdateAnimation')) {
+          const style = document.createElement('style');
+          style.id = 'criticalUpdateAnimation';
+          style.textContent = `
+            @keyframes criticalPulse {
+              0% { box-shadow: 0 0 20px rgba(220, 53, 69, 0.3); }
+              50% { box-shadow: 0 0 30px rgba(220, 53, 69, 0.7); }
+              100% { box-shadow: 0 0 20px rgba(220, 53, 69, 0.3); }
+            }
+            .modal-dialog-critical .modal-content {
+              border-radius: 0.375rem !important;
+            }
+          `;
+          document.head.appendChild(style);
+        }
+      }
+      if (downloadButton) {
+        downloadButton.className = 'btn btn-danger';
+        downloadButton.innerHTML = '🔒 Install Critical Update Now';
+        downloadButton.style.backgroundColor = '#dc3545';
+        downloadButton.style.borderColor = '#dc3545';
+      }
+      
+      // Hide "Maybe Later" button for critical updates
+      if (maybeButton) {
+        maybeButton.style.display = 'none';
+      }
+      
+      // Replace close button with admin-protected close
+      if (closeButton) {
+        // Remove Bootstrap's dismiss behavior for critical updates
+        closeButton.removeAttribute('data-bs-dismiss');
+        closeButton.onclick = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          showAdminPasswordPrompt();
+          return false;
+        };
+      }
+    } else {
+      // Reset to normal update styling
+      if (modalTitle) {
+        modalTitle.innerHTML = '🎉 Update Available!';
+        modalTitle.style.color = '';
+      }
+      if (modalHeader) {
+        modalHeader.style.backgroundColor = '';
+        modalHeader.style.borderColor = '';
+      }
+      if (modalDialog) {
+        modalDialog.classList.remove('modal-dialog-critical');
+        modalDialog.style.border = '';
+        modalDialog.style.borderRadius = '';
+        modalDialog.style.boxShadow = '';
+        modalDialog.style.animation = '';
+      }
+      if (downloadButton) {
+        downloadButton.className = 'btn btn-primary';
+        downloadButton.innerHTML = 'Download Update';
+        // Clear any inline styles that might override Bootstrap classes
+        downloadButton.removeAttribute('style');
+      }
+      
+      // Show "Maybe Later" button for normal updates
+      if (maybeButton) {
+        maybeButton.style.display = '';
+      }
+      
+      // Reset close button behavior
+      if (closeButton) {
+        closeButton.setAttribute('data-bs-dismiss', 'modal');
+        closeButton.onclick = null;
+      }
     }
     
     // Reset progress bar
@@ -757,16 +857,115 @@ function showUpdateModal(version, releaseNotes, macLink, winLink) {
       win: winLink
     };
     
-    // Show the update modal
-    const updateModal = new bootstrap.Modal(document.getElementById('updateModal'));
+    // Show the update modal with appropriate backdrop behavior
+    const modalElement = document.getElementById('updateModal');
+    const updateModal = new bootstrap.Modal(modalElement, {
+      backdrop: isCritical ? 'static' : true, // Prevent closing by clicking outside for critical updates
+      keyboard: !isCritical // Prevent ESC key closing for critical updates
+    });
     updateModal.show();
     
-    logBasic('info', 'Update modal displayed', { version });
+    logBasic('info', 'Update modal displayed', { version, isCritical });
   } catch (error) {
     logBasic('error', 'Failed to show update modal', { error: error.message });
     // Fallback to alert
     alert(`New version ${version} is available!\n\nRelease Notes:\n${releaseNotes}`);
   }
+}
+
+// Shared admin password validation function
+function validateAdminPassword(password) {
+  // Centralized admin password - can be easily changed here
+  return password === 'admin';
+}
+
+
+
+// Admin password prompt for critical updates
+async function showAdminPasswordPrompt() {
+  try {
+    // Create our own simple modal
+    const password = await showCriticalPasswordDialog();
+    
+    if (password && validateAdminPassword(password)) {
+      // Correct password - close the update modal
+      const updateModal = bootstrap.Modal.getInstance(document.getElementById('updateModal'));
+      if (updateModal) {
+        updateModal.hide();
+        logBasic('warning', 'Critical update skipped with admin password');
+      }
+    } else if (password) {
+      // Wrong password entered
+      logBasic('warning', 'Critical update dismiss attempt with incorrect password');
+      alert('❌ Incorrect administrator password. Critical security update cannot be skipped.');
+    }
+    // If no password (user cancelled), do nothing - stay on critical modal
+  } catch (error) {
+    console.error('Error in password prompt:', error);
+  }
+}
+
+// Simple synchronous-style password dialog for critical updates
+function showCriticalPasswordDialog() {
+  return new Promise((resolve) => {
+    // Create temporary modal HTML
+    const modalHtml = `
+      <div class="modal fade" id="criticalPasswordModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title">🔒 Administrator Access Required</h5>
+            </div>
+            <div class="modal-body">
+              <p>Enter administrator password to skip this critical security update:</p>
+              <input type="password" class="form-control" id="criticalPassword" placeholder="Password">
+              <div class="invalid-feedback">Incorrect password</div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" id="criticalPasswordCancel">Cancel</button>
+              <button type="button" class="btn btn-danger" id="criticalPasswordConfirm">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Add to DOM temporarily
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    const modal = new bootstrap.Modal(document.getElementById('criticalPasswordModal'));
+    const passwordField = document.getElementById('criticalPassword');
+    const confirmBtn = document.getElementById('criticalPasswordConfirm');
+    const cancelBtn = document.getElementById('criticalPasswordCancel');
+    
+    const cleanup = () => {
+      modal.hide();
+      setTimeout(() => {
+        document.getElementById('criticalPasswordModal')?.remove();
+      }, 300);
+    };
+    
+    confirmBtn.onclick = () => {
+      const password = passwordField.value;
+      cleanup();
+      resolve(password);
+    };
+    
+    cancelBtn.onclick = () => {
+      cleanup();
+      resolve(null);
+    };
+    
+    // Enter key support
+    passwordField.onkeypress = (e) => {
+      if (e.key === 'Enter') {
+        confirmBtn.click();
+      }
+    };
+    
+    modal.show();
+    setTimeout(() => passwordField.focus(), 300);
+  });
 }
 
 // Function to handle download update button click
@@ -2484,7 +2683,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('confirmDeveloperAccess').addEventListener('click', function() {
     const password = document.getElementById('developerPassword').value;
     
-    if (password === 'admin') {
+    if (validateAdminPassword(password)) {
       // Close the access modal
       const developerAccessModal = bootstrap.Modal.getInstance(document.getElementById('developerAccessModal'));
       developerAccessModal.hide();

@@ -314,7 +314,7 @@ function createSplashWindow() {
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900,
-    height: 900,
+    height: 850,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -359,13 +359,27 @@ function createMenu() {
     ...(isMac ? [{
       label: app.getName(),
       submenu: [
-        { role: 'about' },
+        { 
+          label: 'About Lecture Logger',
+          click: () => {
+            if (mainWindow && mainWindow.webContents) {
+              mainWindow.webContents.executeJavaScript('document.getElementById("infoBtn").click()');
+            }
+          }
+        },
         { type: 'separator' },
         { 
           label: 'Check for Updates...',
           click: () => {
             if (mainWindow && mainWindow.webContents) {
-              mainWindow.webContents.executeJavaScript('checkForUpdates(true)');
+              mainWindow.webContents.executeJavaScript(`
+                if (typeof checkForUpdates === 'function') {
+                  checkForUpdates(true);
+                } else {
+                  console.log('checkForUpdates function not available yet');
+                  alert('Please wait for the app to fully load before checking for updates.');
+                }
+              `);
             }
           }
         },
