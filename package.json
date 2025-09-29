@@ -65,10 +65,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "allowElevation": true,
+      "allowElevation": false,
       "perMachine": false,
       "deleteAppDataOnUninstall": false,
-      "runAfterFinish": false,
+      "runAfterFinish": true,
       "menuCategory": false,
       "artifactName": "${productName}-${version}-x64.exe",
       "uninstallDisplayName": "${productName}",
@@ -80,7 +80,7 @@
       "installerLanguages": [
         "en_US"
       ],
-      "packElevateHelper": true,
+      "packElevateHelper": false,
       "guid": "a8b7bd78-cfea-5f1f-95a5-6a1b0730475d",
       "removeDefaultUninstallWelcomePage": false
     },
