@@ -487,7 +487,7 @@
 
           <div class="col-md-6">
             <label class="form-label">Session Length (hrs)</label>
-            <input type="number" class="form-control" id="length" min="0" step="0.5" placeholder="e.g. 2.5" required>
+            <input type="number" class="form-control" id="length" min="0" step="0.5" placeholder="e.g. 2.5" required onkeydown="return !['e', 'E', '+', '-'].includes(event.key)">
           </div>
 
           <div class="col-md-12">
