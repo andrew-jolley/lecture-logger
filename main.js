@@ -168,6 +168,7 @@ function createSplashWindow() {
     transparent: false,
     backgroundColor: '#667eea',
     resizable: false,
+    title: 'Lecture Logger', // Fix for macOS Mission Control display
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
