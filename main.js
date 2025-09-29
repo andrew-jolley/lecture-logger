@@ -372,7 +372,14 @@ function createMenu() {
           label: 'Check for Updates...',
           click: () => {
             if (mainWindow && mainWindow.webContents) {
-              mainWindow.webContents.executeJavaScript('checkForUpdates(true)');
+              mainWindow.webContents.executeJavaScript(`
+                if (typeof checkForUpdates === 'function') {
+                  checkForUpdates(true);
+                } else {
+                  console.log('checkForUpdates function not available yet');
+                  alert('Please wait for the app to fully load before checking for updates.');
+                }
+              `);
             }
           }
         },
