@@ -176,6 +176,11 @@ function createSplashWindow() {
     roundedCorners: true
   });
 
+  // Create main window immediately but keep it hidden
+  if (!mainWindow) {
+    createWindow();
+  }
+
   // Create splash HTML content
   const splashHTML = `
     <!DOCTYPE html>
@@ -280,16 +285,30 @@ function createSplashWindow() {
     splashWindow = null;
   });
 
-  // Fallback: close splash after 6 seconds if app-ready signal never comes
+  // Close splash after 7 seconds and show main window with modals
   setTimeout(() => {
     if (splashWindow && !splashWindow.isDestroyed()) {
-      console.log('Fallback: Closing splash window after timeout');
+      console.log('Closing splash window after 7 seconds');
       splashWindow.close();
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.show();
+        // On Windows, force focus and bring to front to fix input bug
+        if (process.platform === 'win32') {
+          setTimeout(() => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.focus();
+              mainWindow.setAlwaysOnTop(true);
+              mainWindow.setAlwaysOnTop(false);
+            }
+          }, 200);
+        }
+        // Signal renderer that splash is done and modals can now show
+        setTimeout(() => {
+          mainWindow.webContents.executeJavaScript('window.splashComplete = true; if (window.onSplashComplete) window.onSplashComplete();');
+        }, 300);
       }
     }
-  }, 6000);
+  }, 7000);
 }
 
 function createWindow() {
