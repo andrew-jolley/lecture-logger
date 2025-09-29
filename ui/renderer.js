@@ -2117,6 +2117,63 @@ async function savePythonSettings() {
   }
 }
 
+// Python download notification functions
+async function checkPythonDownloadNeeded() {
+  try {
+    const result = await ipcRenderer.invoke('check-python-download-needed');
+    if (result.needed && result.platform) {
+      logBasic('info', 'Python download needed on Windows', result);
+      showPythonDownloadNotification(result.platform);
+    }
+  } catch (error) {
+    logVerbose('warn', 'Error checking Python download status', error.message);
+  }
+}
+
+function showPythonDownloadNotification(platform) {
+  // Only show on Windows
+  if (!platform.startsWith('win32')) return;
+  
+  showSuccessAlert(
+    '🐍 Python Setup Required',
+    `Setting up Python runtime for enhanced features. This will download about 10MB...`
+  );
+  
+  // Start the download automatically
+  setTimeout(async () => {
+    try {
+      await ipcRenderer.invoke('download-python-runtime', platform);
+    } catch (error) {
+      showErrorAlert('Python setup failed', error.message);
+    }
+  }, 2000); // Give user time to see the notification
+}
+
+// Listen for Python download events
+ipcRenderer.on('python-download-started', (event, data) => {
+  logBasic('info', 'Python download started', data);
+  showSuccessAlert(
+    '⬇️ Downloading Python',
+    `Setting up Python ${data.platform}... Please wait.`
+  );
+});
+
+ipcRenderer.on('python-download-completed', (event, data) => {
+  logBasic('info', 'Python download completed', data);
+  showSuccessAlert(
+    '✅ Python Setup Complete',
+    'Python runtime is now ready for enhanced functionality!'
+  );
+});
+
+ipcRenderer.on('python-download-failed', (event, data) => {
+  logBasic('error', 'Python download failed', data);
+  showErrorAlert(
+    'Python setup failed',
+    `Could not download Python: ${data.error}`
+  );
+});
+
 // Show settings modal on first run
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize cache directory first
@@ -2160,6 +2217,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Save Python settings for bridge communication
   await savePythonSettings();
   
+  // Check if Python download is needed (Windows only)
+  await checkPythonDownloadNeeded();  
 
   
   // Only log if verbose logging is enabled (check after loading settings)

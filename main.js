@@ -91,6 +91,14 @@ function getEmbeddedPythonPath() {
     }
   }
   
+  // On Windows, if embedded Python is missing, offer to download it
+  if (platform === 'win32' && !runtimeDir) {
+    console.log('Embedded Python not found on Windows - checking if runtime download is needed');
+    // Set a flag that Python needs to be downloaded
+    global.pythonDownloadNeeded = true;
+    global.pythonPlatformArch = `${platform}-${mappedArch}`;
+  }
+  
   // Fallback to system Python
   console.log('Embedded Python not found, falling back to system python3');
   return 'python3';
@@ -1190,6 +1198,49 @@ ipcMain.handle('save-python-settings', async (event, settings) => {
       fs.appendFileSync(debugPath, `=====================================\n\n`);
     } catch (e) {}
     
+    return { success: false, error: error.message };
+  }
+});
+
+// IPC handler to check if Python download is needed
+ipcMain.handle('check-python-download-needed', async (event) => {
+  return {
+    needed: global.pythonDownloadNeeded || false,
+    platform: global.pythonPlatformArch || null
+  };
+});
+
+// IPC handler to download Python runtime
+ipcMain.handle('download-python-runtime', async (event, platformKey) => {
+  const platform = os.platform();
+  
+  // Only allow downloads on Windows
+  if (platform !== 'win32') {
+    return { success: false, error: 'Python download is only available on Windows' };
+  }
+  
+  // Import the setup function
+  const setupScript = require('./scripts/setup-multiplatform-python.js');
+  
+  try {
+    console.log(`Starting Python download for ${platformKey}...`);
+    
+    // Show notification to user
+    event.sender.send('python-download-started', { platform: platformKey });
+    
+    // Run the Python setup
+    await setupScript.main();
+    
+    // Clear the download needed flag
+    global.pythonDownloadNeeded = false;
+    
+    // Notify completion
+    event.sender.send('python-download-completed', { platform: platformKey });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Python download failed:', error);
+    event.sender.send('python-download-failed', { platform: platformKey, error: error.message });
     return { success: false, error: error.message };
   }
 });
