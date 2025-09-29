@@ -359,7 +359,14 @@ function createMenu() {
     ...(isMac ? [{
       label: app.getName(),
       submenu: [
-        { role: 'about' },
+        { 
+          label: 'About Lecture Logger',
+          click: () => {
+            if (mainWindow && mainWindow.webContents) {
+              mainWindow.webContents.executeJavaScript('document.getElementById("infoBtn").click()');
+            }
+          }
+        },
         { type: 'separator' },
         { 
           label: 'Check for Updates...',
