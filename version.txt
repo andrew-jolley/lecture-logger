@@ -1,5 +1,5 @@
 Latest_Version: 2.7.0
-Critical: Y
+Critical: N
 Download_Link_Mac: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.7.0/Lecture.Logger-2.7.0-arm64.dmg
 Download_Link_Win: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.7.0/Lecture.Logger-2.7.0-x64.exe
 Release_Notes:
