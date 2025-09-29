@@ -67,8 +67,8 @@
       "artifactName": "${productName}-${version}-x64.exe",
       "uninstallDisplayName": "${productName}",
       "include": "installer-script.nsh",
-      "installerHeaderIcon": null,
-      "uninstallerIcon": null,
+      "installerHeaderIcon": "../lec_log_win.ico",
+      "uninstallerIcon": "../lec_log_win.ico",
       "warningsAsErrors": false,
       "displayLanguageSelector": false,
       "installerLanguages": ["en_US"],
@@ -77,6 +77,7 @@
       "removeDefaultUninstallWelcomePage": false
     },
     "mac": {
+      "icon": "../lec_log_mac.icns",
       "target": [
         {
           "target": "dmg",
@@ -90,6 +91,7 @@
       "compression": "maximum"
     },
     "win": {
+      "icon": "../lec_log_win.ico",
       "target": [
         {
           "target": "nsis",

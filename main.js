@@ -160,6 +160,11 @@ function shouldUseCachedUI() {
 }
 
 function createSplashWindow() {
+  const path = require('path');
+  const iconPath = process.platform === 'win32' 
+    ? path.join(__dirname, 'lec_log_win.ico')
+    : path.join(__dirname, 'lec_log_mac.icns');
+    
   splashWindow = new BrowserWindow({
     width: 400,
     height: 300,
@@ -169,6 +174,7 @@ function createSplashWindow() {
     backgroundColor: '#667eea',
     resizable: false,
     title: 'Lecture Logger', // Fix for macOS Mission Control display
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -313,9 +319,15 @@ function createSplashWindow() {
 }
 
 function createWindow() {
+  const path = require('path');
+  const iconPath = process.platform === 'win32' 
+    ? path.join(__dirname, 'lec_log_win.ico')
+    : path.join(__dirname, 'lec_log_mac.icns');
+    
   mainWindow = new BrowserWindow({
     width: 900,
     height: 850,
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
