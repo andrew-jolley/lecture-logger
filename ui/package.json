@@ -1,7 +1,7 @@
 {
   "name": "lecture-logger",
-  "version": "2.6.3",
-  "buildNumber": "20250924.373",
+  "version": "2.8.0",
+  "buildNumber": "20250929.047",
   "uiVersion": "2.0.1",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley <andrew@jolley.dev> (UI/Frontend), Liam Shadwell (Python Backend)",
@@ -18,13 +18,16 @@
     "build": "npm run dist",
     "build:win": "npm run dist:win",
     "build:mac": "npm run dist:mac",
-    "build:linux": "npm run dist:linux"
+    "build:linux": "npm run dist:linux",
+    "list-builds": "node scripts/list-builds.js"
   },
   "dependencies": {
+    "electron-version": "^2.0.1",
     "exceljs": "^4.4.0"
   },
   "devDependencies": {
-    "electron": "^31.0.0",
+    "dmg-license": "^1.0.11",
+    "electron": "^38.2.0",
     "electron-builder": "^24.13.3"
   },
   "build": {
@@ -39,13 +42,16 @@
       "renderer.js",
       "package.json",
       "python/**/*",
-      "!python/electron_settings.json"
+      "!python/electron_settings.json",
+      "!python-runtime/**/*"
     ],
     "extraFiles": [
       {
         "from": "python-runtime",
         "to": "python-runtime",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "asarUnpack": [
@@ -71,7 +77,9 @@
       "uninstallerIcon": "../lec_log_win.ico",
       "warningsAsErrors": false,
       "displayLanguageSelector": false,
-      "installerLanguages": ["en_US"],
+      "installerLanguages": [
+        "en_US"
+      ],
       "packElevateHelper": false,
       "guid": "a8b7bd78-cfea-5f1f-95a5-6a1b0730475d",
       "removeDefaultUninstallWelcomePage": false
@@ -81,11 +89,15 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         },
         {
           "target": "pkg",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         }
       ],
       "compression": "maximum"
@@ -95,7 +107,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "compression": "maximum",
@@ -107,7 +121,9 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "compression": "maximum"
