@@ -166,6 +166,10 @@ function showSuccessAlert(message, details = '') {
   }, 4000);
 }
 
+// Splash screen completion tracking
+window.splashComplete = false;
+window.onSplashComplete = null;
+
 function showErrorAlert(message, details = '') {
   const alertHtml = `
     <div style="
@@ -1612,6 +1616,15 @@ function checkVersionAndShowReleaseNotes() {
   }
 }
 
+// Show release notes modal with optional callback when dismissed
+function showReleaseNotesWithCallback(callback) {
+  const modal = showReleaseNotes();
+  if (modal && callback) {
+    const modalElement = document.getElementById('releaseNotesModal');
+    modalElement.addEventListener('hidden.bs.modal', callback, { once: true });
+  }
+}
+
 // Show release notes modal
 function showReleaseNotes() {
   try {
@@ -1704,9 +1717,11 @@ function showReleaseNotes() {
     releaseModal.show();
     
     logBasic('info', 'Release notes modal displayed', { totalVersions: sortedVersions.length });
+    return releaseModal;
   } catch (error) {
     console.error('Error in showReleaseNotes:', error);
     alert(`Error showing release notes: ${error.message}`);
+    return null;
   }
 }
 
@@ -2232,6 +2247,54 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
   
+  // Function to handle initial modals after splash screen
+  window.checkAndShowInitialModals = function() {
+    // Check if this is first launch and show initial setup modal
+    const binaryVersionFile = path.join(os.homedir(), 'Documents', '.lecture-logger-version');
+    try {
+      const storedVersion = fs.readFileSync(binaryVersionFile, 'utf8').trim();
+      if (storedVersion !== currentVersion) {
+        // Show release notes for new version, then check for updates after dismissal
+        setTimeout(() => {
+          showReleaseNotesWithCallback(() => {
+            // After release notes are dismissed, check for updates
+            setTimeout(() => {
+              if (appSettings.autoUpdateCheck !== false) {
+                checkForUpdates(false);
+              }
+            }, 500);
+          });
+        }, 500);
+        return; // Don't run update check in runDelayedStartupTasks
+      }
+    } catch (error) {
+      // First launch - show initial setup modal, then check for updates after dismissal
+      setTimeout(() => {
+        const initialSetupModal = new bootstrap.Modal(document.getElementById('initialSetupModal'));
+        const modalElement = document.getElementById('initialSetupModal');
+        
+        // Listen for modal dismissal
+        modalElement.addEventListener('hidden.bs.modal', function() {
+          setTimeout(() => {
+            if (appSettings.autoUpdateCheck !== false) {
+              checkForUpdates(false);
+            }
+          }, 500);
+        }, { once: true });
+        
+        initialSetupModal.show();
+      }, 500);
+      return; // Don't run update check in runDelayedStartupTasks
+    }
+    
+    // No initial modals needed, proceed with normal update check
+    setTimeout(() => {
+      if (appSettings.autoUpdateCheck !== false) {
+        checkForUpdates(false);
+      }
+    }, 500);
+  };
+
   // Check for Updates button in About modal
   document.getElementById('checkUpdatesBtn').addEventListener('click', function() {
     logBasic('info', 'Check for updates button clicked from About modal');
@@ -3153,12 +3216,20 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Initial Setup Modal handlers - removed duplicate, using the comprehensive handler above
 
-  // Check for updates on startup if enabled
-  setTimeout(() => {
-    if (appSettings.autoUpdateCheck !== false) { // Default to true if not set
-      checkForUpdates(false);
-    }
-  }, 2000); // Wait 2 seconds after startup
+  // Function to run delayed startup tasks after splash
+  function runDelayedStartupTasks() {
+    // Show initial setup or release notes modals (which handle update checks internally)
+    setTimeout(() => {
+      checkAndShowInitialModals();
+    }, 1000);
+  }
+  
+  // Wait for splash to complete before running startup tasks
+  if (window.splashComplete) {
+    runDelayedStartupTasks();
+  } else {
+    window.onSplashComplete = runDelayedStartupTasks;
+  }
   
   // Signal to main process that app is ready
   setTimeout(async () => {
