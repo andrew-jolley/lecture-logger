@@ -241,19 +241,19 @@ def addLocation():  #adding activity location to the rowData list
             ]
         
         
-        for i in range (1,len(options)):    #define the indexes of the options
-            print(f"{i} - {options[i]}")    #and print
+        for i in range (len(options)):    #define the indexes of the options
+            print(f"{i+1} - {options[i]}")    #and print
             
         selected = int(input("\nEnter the chosen location here >>     "))   #get the users selection
         
-        if selected > len(options)-1 or selected == 0:      #validate input, if invalid, then go to start of function
+        if selected > len(options)+1 or selected == 0:      #validate input, if invalid, then go to start of function
             print("Sorry, that option is not valid. Please try again...\n")
             addLocation()
             
-        rowData.append(options[selected])       #add selection to rowData
+        rowData.append(options[selected-1])       #add selection to rowData
     
-        print(f"Got it, using '{options[selected]}'.")      #status and log
-        log(f"addLocation() - Added Location:'{options[selected]}' to 'rowData' list",1)
+        print(f"Got it, using '{options[selected-1]}'.")      #status and log
+        log(f"addLocation() - Added Location:'{options[selected-1]}' to 'rowData' list",1)
         
     except ValueError as e:         #if the wrong data type is entered, then state and log
         print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
@@ -288,8 +288,8 @@ def addType():   #adding activity type to the rowData list
             "Independent Study"
         ]
 
-        for i in range (1,len(options)):     #define the indexes of the options
-            print(f"{i} - {options[i]}")    #and print
+        for i in range (len(options)):     #define the indexes of the options
+            print(f"{i+1} - {options[i]}")    #and print
             
         selected = int(input("\nEnter the chosen location here >>     "))   #get the users selection
         
@@ -297,10 +297,10 @@ def addType():   #adding activity type to the rowData list
             print("Sorry, that option is not valid. Please try again...\n")
             addType()
             
-        rowData.append(options[selected])   #add selection to rowData
+        rowData.append(options[selected-1])   #add selection to rowData
     
-        print(f"Got it, using '{options[selected]}'.")          #status and log
-        log(f"addType() - Added Type:'{options[selected]}' to 'rowData' list",1)
+        print(f"Got it, using '{options[selected-1]}'.")          #status and log
+        log(f"addType() - Added Type:'{options[selected-1]}' to 'rowData' list",1)
         
     except ValueError as e:       #if the wrong data type is entered, then state and log
         print("INCORRECT VARIABLE TYPE ENTERED! Try again...")
