@@ -275,17 +275,25 @@ function checkBinaryVersionFirstLaunch() {
       if (appSettings.enableOTA) {
         // Empty cache directory but keep it
         if (LOCAL_UI_CACHE_DIR && fs.existsSync(LOCAL_UI_CACHE_DIR)) {
-          console.log('Emptying UI cache directory for new binary version...');
-          const files = fs.readdirSync(LOCAL_UI_CACHE_DIR);
-          for (const file of files) {
-            fs.unlinkSync(path.join(LOCAL_UI_CACHE_DIR, file));
+          try {
+            console.log('Emptying UI cache directory for new binary version...');
+            const files = fs.readdirSync(LOCAL_UI_CACHE_DIR);
+            for (const file of files) {
+              fs.unlinkSync(path.join(LOCAL_UI_CACHE_DIR, file));
+            }
+          } catch (error) {
+            console.warn('Warning: Could not empty cache directory:', error.message);
           }
         }
       } else {
         // Delete entire cache directory
         if (LOCAL_UI_CACHE_DIR && fs.existsSync(LOCAL_UI_CACHE_DIR)) {
-          console.log('Deleting UI cache directory (OTA disabled)...');
-          fs.rmSync(LOCAL_UI_CACHE_DIR, { recursive: true, force: true });
+          try {
+            console.log('Deleting UI cache directory (OTA disabled)...');
+            fs.rmSync(LOCAL_UI_CACHE_DIR, { recursive: true, force: true });
+          } catch (error) {
+            console.warn('Warning: Could not delete cache directory:', error.message);
+          }
         }
       }
       
@@ -453,8 +461,16 @@ async function checkUIVersion() {
     
     // Ensure cache directory is initialized and exists
     await initializeCacheDir();
-    if (!fs.existsSync(LOCAL_UI_CACHE_DIR)) {
-      fs.mkdirSync(LOCAL_UI_CACHE_DIR, { recursive: true });
+    if (!LOCAL_UI_CACHE_DIR) {
+      throw new Error('Cache directory not available');
+    }
+    
+    try {
+      if (!fs.existsSync(LOCAL_UI_CACHE_DIR)) {
+        fs.mkdirSync(LOCAL_UI_CACHE_DIR, { recursive: true });
+      }
+    } catch (error) {
+      throw new Error(`Cannot create cache directory: ${error.message}`);
     }
 
     // Check current UI version

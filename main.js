@@ -7,8 +7,50 @@ const os = require('os');
 let mainWindow;
 let splashWindow;
 
-// UI Cache configuration
-const LOCAL_UI_CACHE_DIR = path.join(app.getPath('cache'), 'LectureLogger-UI');
+// UI Cache configuration with Windows fallback support
+let LOCAL_UI_CACHE_DIR;
+
+function initializeCacheDirectory() {
+  const fallbackDirs = [
+    // Primary: Standard Electron cache directory
+    path.join(app.getPath('cache'), 'LectureLogger-UI'),
+    // Fallback 1: User data directory
+    path.join(app.getPath('userData'), 'cache', 'LectureLogger-UI'),
+    // Fallback 2: Temp directory
+    path.join(app.getPath('temp'), 'LectureLogger-UI-Cache'),
+    // Fallback 3: App directory (last resort)
+    path.join(__dirname, '.cache', 'LectureLogger-UI')
+  ];
+
+  for (const dir of fallbackDirs) {
+    try {
+      // Test if we can create and write to this directory
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Test write permissions
+      const testFile = path.join(dir, 'test-write.tmp');
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      
+      LOCAL_UI_CACHE_DIR = dir;
+      console.log(`✅ Cache directory initialized: ${dir}`);
+      return dir;
+    } catch (error) {
+      console.warn(`⚠️  Cache directory failed: ${dir} - ${error.message}`);
+      // Continue to next fallback
+    }
+  }
+  
+  // If all fallbacks fail, disable caching
+  console.error('❌ All cache directories failed - caching disabled');
+  LOCAL_UI_CACHE_DIR = null;
+  return null;
+}
+
+// Initialize cache directory on startup
+LOCAL_UI_CACHE_DIR = initializeCacheDirectory();
 
 // Python runtime configuration
 function getEmbeddedPythonPath() {
@@ -124,37 +166,48 @@ function shouldUseCachedUI() {
     return false;
   }
   
-  const cachedIndexPath = path.join(LOCAL_UI_CACHE_DIR, 'index.html');
-  const cachedRendererPath = path.join(LOCAL_UI_CACHE_DIR, 'renderer.js');
-  const versionFilePath = path.join(LOCAL_UI_CACHE_DIR, 'ui-version.txt');
+  // Check if caching is available
+  if (!LOCAL_UI_CACHE_DIR) {
+    console.log('Cache directory not available - using bundled UI files');
+    return false;
+  }
   
-  console.log('Checking cached UI files:');
-  console.log('- Cache directory:', LOCAL_UI_CACHE_DIR);
-  console.log('- index.html exists:', fs.existsSync(cachedIndexPath));
-  console.log('- renderer.js exists:', fs.existsSync(cachedRendererPath));
-  console.log('- ui-version.txt exists:', fs.existsSync(versionFilePath));
+  try {
+    const cachedIndexPath = path.join(LOCAL_UI_CACHE_DIR, 'index.html');
+    const cachedRendererPath = path.join(LOCAL_UI_CACHE_DIR, 'renderer.js');
+    const versionFilePath = path.join(LOCAL_UI_CACHE_DIR, 'ui-version.txt');
+    
+    console.log('Checking cached UI files:');
+    console.log('- Cache directory:', LOCAL_UI_CACHE_DIR);
+    console.log('- index.html exists:', fs.existsSync(cachedIndexPath));
+    console.log('- renderer.js exists:', fs.existsSync(cachedRendererPath));
+    console.log('- ui-version.txt exists:', fs.existsSync(versionFilePath));
   
-  // Check if all required cached files exist
-  const allFilesExist = fs.existsSync(cachedIndexPath) && 
-                       fs.existsSync(cachedRendererPath) && 
-                       fs.existsSync(versionFilePath);
-  
-  if (allFilesExist) {
-    try {
-      // Read and compare versions
-      const cachedVersion = fs.readFileSync(versionFilePath, 'utf8').trim();
-      console.log('- Cached UI version:', cachedVersion);
-      
-      // Check if cached version is newer than what we expect to be bundled
-      // For now, if cached files exist and version file is readable, use them
-      console.log('✅ Using cached UI files');
-      return true;
-    } catch (error) {
-      console.log('❌ Error reading cached version file:', error.message);
+    // Check if all required cached files exist
+    const allFilesExist = fs.existsSync(cachedIndexPath) && 
+                         fs.existsSync(cachedRendererPath) && 
+                         fs.existsSync(versionFilePath);
+    
+    if (allFilesExist) {
+      try {
+        // Read and compare versions
+        const cachedVersion = fs.readFileSync(versionFilePath, 'utf8').trim();
+        console.log('- Cached UI version:', cachedVersion);
+        
+        // Check if cached version is newer than what we expect to be bundled
+        // For now, if cached files exist and version file is readable, use them
+        console.log('✅ Using cached UI files');
+        return true;
+      } catch (error) {
+        console.log('❌ Error reading cached version file:', error.message);
+        return false;
+      }
+    } else {
+      console.log('❌ Not all cached files exist - using bundled files');
       return false;
     }
-  } else {
-    console.log('❌ Not all cached files exist - using bundled files');
+  } catch (error) {
+    console.error('Error accessing cache directory:', error.message);
     return false;
   }
 }
