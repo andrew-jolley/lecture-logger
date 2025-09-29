@@ -909,6 +909,48 @@ async function showAdminPasswordPrompt() {
   }
 }
 
+// Validate session length and show confirmation if > 10 hours
+function validateSessionLength(input) {
+  const value = parseFloat(input.value);
+  
+  if (value > 10) {
+    // Update the modal message with the specific value
+    const messageElement = document.getElementById('sessionLengthMessage');
+    if (messageElement) {
+      messageElement.textContent = `You entered ${value} hours for the session length. This seems unusually long for a single session.`;
+    }
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('sessionLengthModal'));
+    
+    // Set up event handlers for the modal buttons
+    const confirmBtn = document.getElementById('sessionLengthConfirm');
+    const cancelBtn = document.getElementById('sessionLengthCancel');
+    
+    const handleConfirm = () => {
+      // User wants to keep the value - just close modal
+      modal.hide();
+      confirmBtn.removeEventListener('click', handleConfirm);
+      cancelBtn.removeEventListener('click', handleCancel);
+    };
+    
+    const handleCancel = () => {
+      // User wants to correct it - clear field and focus
+      input.value = '';
+      modal.hide();
+      setTimeout(() => input.focus(), 300);
+      confirmBtn.removeEventListener('click', handleConfirm);
+      cancelBtn.removeEventListener('click', handleCancel);
+    };
+    
+    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener('click', handleCancel);
+    
+    modal.show();
+  }
+  return true;
+}
+
 // Simple synchronous-style password dialog for critical updates
 function showCriticalPasswordDialog() {
   return new Promise((resolve) => {
