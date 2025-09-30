@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="ui-version" content="2.0.1">
   <title>Lecture Logger</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="../assets/bootstrap/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
       background-color: #f8f9fa !important;
@@ -812,10 +812,24 @@
               <div class="form-text">Enter an older version number to simulate an outdated app and test the update system.</div>
             </div>
             
-            <button type="button" class="btn btn-warning btn-sm" id="devTestUpdateCheck">
-              🔄 Test Update Check
-            </button>
-            <div class="form-text">Triggers update check using the test version above (if set) or current version.</div>
+            <div class="row g-2 mb-3">
+              <div class="col-4">
+                <button type="button" class="btn btn-warning btn-sm w-100" id="devTestUpdateCheck">
+                  🔄 Test Update Check
+                </button>
+              </div>
+              <div class="col-4">
+                <button type="button" class="btn btn-primary btn-sm w-100" id="devTestNormalUpdate">
+                  📘 Test Normal Update
+                </button>
+              </div>
+              <div class="col-4">
+                <button type="button" class="btn btn-danger btn-sm w-100" id="devTestCriticalUpdate">
+                  🚨 Test Critical Update
+                </button>
+              </div>
+            </div>
+            <div class="form-text">Test various update scenarios: standard update check, normal update modal, or critical update modal using the version above.</div>
           </div>
           
           <!-- GitHub Debug Section -->
@@ -1041,7 +1055,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/bootstrap/bootstrap.bundle.min.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

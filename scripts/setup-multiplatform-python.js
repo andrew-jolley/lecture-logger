@@ -6,9 +6,9 @@
  * This script downloads and configures Python distributions for all target platforms:
  * - Windows: Downloads embeddable Python 3.13.5 with pip and openpyxl support
  * - macOS: Creates intelligent wrapper that finds system Python and auto-installs openpyxl
- * - Linux: Creates smart wrapper with package manager guidance
+
  * 
- * Total size impact: ~41MB (Windows only, macOS/Linux are lightweight wrappers)
+ * Total size impact: ~41MB (Windows only, macOS is lightweight wrapper)
  * 
  * Usage: npm run setup-python (automatically called during build)
  */
@@ -27,11 +27,6 @@ const PYTHON_DOWNLOADS = {
     url: `https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}-embed-amd64.zip`,
     type: 'embeddable',
     size: '10.4 MB'
-  },
-  'win32-ia32': {
-    url: `https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}-embed-win32.zip`,
-    type: 'embeddable', 
-    size: '9.2 MB'
   }
 };
 
@@ -171,17 +166,10 @@ exit 1
   fs.writeFileSync(path.join(macosDir, 'bin', 'python3'), macosWrapper);
   fs.chmodSync(path.join(macosDir, 'bin', 'python3'), 0o755);
   
-  // Create Linux wrapper  
-  const linuxDir = path.join(RUNTIME_DIR, 'linux-x64');
-  fs.mkdirSync(path.join(linuxDir, 'bin'), { recursive: true });
-  fs.writeFileSync(path.join(linuxDir, 'bin', 'python3'), macosWrapper.replace('macOS', 'Linux'));
-  fs.chmodSync(path.join(linuxDir, 'bin', 'python3'), 0o755);
-  
-  // Copy bridge scripts
+  // Copy bridge script
   await copyBridgeScript(macosDir);
-  await copyBridgeScript(linuxDir);
   
-  console.log('✅ Wrapper scripts created for macOS and Linux');
+  console.log('✅ Wrapper script created for macOS');
 }
 
 async function main() {
@@ -192,9 +180,8 @@ async function main() {
   try {
     // Download Windows embeddable Python
     await setupWindowsEmbeddable('win32-x64');
-    await setupWindowsEmbeddable('win32-ia32');
     
-    // Create wrapper scripts for macOS and Linux
+    // Create wrapper script for macOS
     await createWrapperScripts();
     
     console.log('🎉 Multi-platform Python setup complete!');

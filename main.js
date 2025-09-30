@@ -7,8 +7,50 @@ const os = require('os');
 let mainWindow;
 let splashWindow;
 
-// UI Cache configuration
-const LOCAL_UI_CACHE_DIR = path.join(app.getPath('cache'), 'LectureLogger-UI');
+// UI Cache configuration with Windows fallback support
+let LOCAL_UI_CACHE_DIR;
+
+function initializeCacheDirectory() {
+  const fallbackDirs = [
+    // Primary: Standard Electron cache directory
+    path.join(app.getPath('cache'), 'LectureLogger-UI'),
+    // Fallback 1: User data directory
+    path.join(app.getPath('userData'), 'cache', 'LectureLogger-UI'),
+    // Fallback 2: Temp directory
+    path.join(app.getPath('temp'), 'LectureLogger-UI-Cache'),
+    // Fallback 3: App directory (last resort)
+    path.join(__dirname, '.cache', 'LectureLogger-UI')
+  ];
+
+  for (const dir of fallbackDirs) {
+    try {
+      // Test if we can create and write to this directory
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Test write permissions
+      const testFile = path.join(dir, 'test-write.tmp');
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      
+      LOCAL_UI_CACHE_DIR = dir;
+      console.log(`✅ Cache directory initialized: ${dir}`);
+      return dir;
+    } catch (error) {
+      console.warn(`⚠️  Cache directory failed: ${dir} - ${error.message}`);
+      // Continue to next fallback
+    }
+  }
+  
+  // If all fallbacks fail, disable caching
+  console.error('❌ All cache directories failed - caching disabled');
+  LOCAL_UI_CACHE_DIR = null;
+  return null;
+}
+
+// Initialize cache directory on startup
+LOCAL_UI_CACHE_DIR = initializeCacheDirectory();
 
 // Python runtime configuration
 function getEmbeddedPythonPath() {
@@ -18,8 +60,7 @@ function getEmbeddedPythonPath() {
   // Map Node.js arch to our naming convention
   const archMap = {
     'x64': 'x64',
-    'arm64': 'arm64',
-    'ia32': 'ia32'
+    'arm64': 'arm64'
   };
   
   const mappedArch = archMap[arch] || 'x64';
@@ -124,37 +165,48 @@ function shouldUseCachedUI() {
     return false;
   }
   
-  const cachedIndexPath = path.join(LOCAL_UI_CACHE_DIR, 'index.html');
-  const cachedRendererPath = path.join(LOCAL_UI_CACHE_DIR, 'renderer.js');
-  const versionFilePath = path.join(LOCAL_UI_CACHE_DIR, 'ui-version.txt');
+  // Check if caching is available
+  if (!LOCAL_UI_CACHE_DIR) {
+    console.log('Cache directory not available - using bundled UI files');
+    return false;
+  }
   
-  console.log('Checking cached UI files:');
-  console.log('- Cache directory:', LOCAL_UI_CACHE_DIR);
-  console.log('- index.html exists:', fs.existsSync(cachedIndexPath));
-  console.log('- renderer.js exists:', fs.existsSync(cachedRendererPath));
-  console.log('- ui-version.txt exists:', fs.existsSync(versionFilePath));
+  try {
+    const cachedIndexPath = path.join(LOCAL_UI_CACHE_DIR, 'index.html');
+    const cachedRendererPath = path.join(LOCAL_UI_CACHE_DIR, 'renderer.js');
+    const versionFilePath = path.join(LOCAL_UI_CACHE_DIR, 'ui-version.txt');
+    
+    console.log('Checking cached UI files:');
+    console.log('- Cache directory:', LOCAL_UI_CACHE_DIR);
+    console.log('- index.html exists:', fs.existsSync(cachedIndexPath));
+    console.log('- renderer.js exists:', fs.existsSync(cachedRendererPath));
+    console.log('- ui-version.txt exists:', fs.existsSync(versionFilePath));
   
-  // Check if all required cached files exist
-  const allFilesExist = fs.existsSync(cachedIndexPath) && 
-                       fs.existsSync(cachedRendererPath) && 
-                       fs.existsSync(versionFilePath);
-  
-  if (allFilesExist) {
-    try {
-      // Read and compare versions
-      const cachedVersion = fs.readFileSync(versionFilePath, 'utf8').trim();
-      console.log('- Cached UI version:', cachedVersion);
-      
-      // Check if cached version is newer than what we expect to be bundled
-      // For now, if cached files exist and version file is readable, use them
-      console.log('✅ Using cached UI files');
-      return true;
-    } catch (error) {
-      console.log('❌ Error reading cached version file:', error.message);
+    // Check if all required cached files exist
+    const allFilesExist = fs.existsSync(cachedIndexPath) && 
+                         fs.existsSync(cachedRendererPath) && 
+                         fs.existsSync(versionFilePath);
+    
+    if (allFilesExist) {
+      try {
+        // Read and compare versions
+        const cachedVersion = fs.readFileSync(versionFilePath, 'utf8').trim();
+        console.log('- Cached UI version:', cachedVersion);
+        
+        // Check if cached version is newer than what we expect to be bundled
+        // For now, if cached files exist and version file is readable, use them
+        console.log('✅ Using cached UI files');
+        return true;
+      } catch (error) {
+        console.log('❌ Error reading cached version file:', error.message);
+        return false;
+      }
+    } else {
+      console.log('❌ Not all cached files exist - using bundled files');
       return false;
     }
-  } else {
-    console.log('❌ Not all cached files exist - using bundled files');
+  } catch (error) {
+    console.error('Error accessing cache directory:', error.message);
     return false;
   }
 }
@@ -177,7 +229,9 @@ function createSplashWindow() {
     icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      nativeWindowOpen: false,
+      allowRunningInsecureContent: false
     },
     show: false,
     roundedCorners: true
@@ -331,12 +385,14 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      enableRemoteModule: true,
-      webSecurity: false // This helps with built apps
+      // Note: These security settings are needed for legacy renderer code
+      // TODO: Refactor to use IPC channels instead of direct Node.js access
+      nativeWindowOpen: false,
+      allowRunningInsecureContent: false
     },
     show: false, // Don't show until ready
     autoHideMenuBar: process.platform === 'win32', // Hide menu bar on Windows
-    menuBarVisible: process.platform !== 'win32' // Show menu bar only on macOS/Linux
+    menuBarVisible: process.platform !== 'win32' // Show menu bar only on macOS
   });
 
   // Don't show main window until app signals it's ready
@@ -876,7 +932,7 @@ ipcMain.handle('open-installer', async (event, filePath) => {
       
       console.log('Successfully opened Downloads folder, closing app in 2 seconds...');
     } else {
-      // On macOS/Linux, open the installer directly
+      // On macOS, open the installer directly
       const result = await shell.openPath(filePath);
       console.log('shell.openPath returned:', result);
       
@@ -956,7 +1012,7 @@ ipcMain.handle('python-bridge', async (event, command, data = null) => {
         // On Windows, python.exe is directly in the runtime directory
         runtimeDir = path.dirname(pythonExePath);
       } else {
-        // On macOS/Linux, python3 is in bin/ subdirectory
+        // On macOS, python3 is in bin/ subdirectory
         runtimeDir = path.dirname(path.dirname(pythonExePath)); // Remove /bin/python3 to get runtime dir
       }
       

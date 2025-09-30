@@ -17,10 +17,10 @@ const outputDir = `dist/v${version}/${buildNumber}`;
 
 // Get platform argument
 const platform = process.argv[2];
-const validPlatforms = ['win', 'mac', 'linux', 'all'];
+const validPlatforms = ['win', 'mac', 'all'];
 
 if (!platform || !validPlatforms.includes(platform)) {
-    console.error('Usage: node scripts/build-helper.js [win|mac|linux|all]');
+    console.error('Usage: node scripts/build-helper.js [win|mac|all]');
     console.error('Example: node scripts/build-helper.js win');
     process.exit(1);
 }
@@ -39,8 +39,7 @@ execSync('npm run setup-python', { stdio: 'inherit' });
 const buildCommands = {
     win: `electron-builder --win --config.directories.output="${outputDir}"`,
     mac: `electron-builder --mac --config.directories.output="${outputDir}"`,
-    linux: `electron-builder --linux --config.directories.output="${outputDir}"`,
-    all: `electron-builder -mwl --config.directories.output="${outputDir}"`
+    all: `electron-builder -mw --config.directories.output="${outputDir}"`
 };
 
 // Execute build

@@ -1,5 +1,26 @@
+# Build outputs
 /dist
 /node_modules
+
+# Python runtime (embedded distributions)
 /python-runtime
+
+# Development/temp files
+*.log
+bridge_log.txt
+*.tmp
+*.temp
+
+# OS files
 .DS_Store
-.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.local

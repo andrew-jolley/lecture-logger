@@ -1,7 +1,7 @@
 {
   "name": "lecture-logger",
   "version": "2.8.0",
-  "buildNumber": "20250929.047",
+  "buildNumber": "20250930.054",
   "uiVersion": "2.0.1",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley <andrew@jolley.dev> (UI/Frontend), Liam Shadwell (Python Backend)",
@@ -14,11 +14,9 @@
     "dist": "node scripts/build-helper.js all",
     "dist:mac": "node scripts/build-helper.js mac",
     "dist:win": "node scripts/build-helper.js win",
-    "dist:linux": "node scripts/build-helper.js linux",
     "build": "npm run dist",
     "build:win": "npm run dist:win",
     "build:mac": "npm run dist:mac",
-    "build:linux": "npm run dist:linux",
     "list-builds": "node scripts/list-builds.js"
   },
   "dependencies": {
@@ -49,6 +47,13 @@
       {
         "from": "python-runtime",
         "to": "python-runtime",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "assets",
+        "to": "assets",
         "filter": [
           "**/*"
         ]
@@ -116,17 +121,6 @@
       "sign": null,
       "forceCodeSigning": false,
       "requestedExecutionLevel": "asInvoker"
-    },
-    "linux": {
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "compression": "maximum"
     }
   }
 }

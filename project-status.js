@@ -94,9 +94,7 @@ console.log('─'.repeat(30));
 
 const runtimeDirs = [
     'python-runtime/darwin-arm64',
-    'python-runtime/linux-x64',
-    'python-runtime/win32-x64', 
-    'python-runtime/win32-ia32'
+    'python-runtime/win32-x64'
 ];
 
 runtimeDirs.forEach(dir => {

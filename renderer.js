@@ -275,17 +275,25 @@ function checkBinaryVersionFirstLaunch() {
       if (appSettings.enableOTA) {
         // Empty cache directory but keep it
         if (LOCAL_UI_CACHE_DIR && fs.existsSync(LOCAL_UI_CACHE_DIR)) {
-          console.log('Emptying UI cache directory for new binary version...');
-          const files = fs.readdirSync(LOCAL_UI_CACHE_DIR);
-          for (const file of files) {
-            fs.unlinkSync(path.join(LOCAL_UI_CACHE_DIR, file));
+          try {
+            console.log('Emptying UI cache directory for new binary version...');
+            const files = fs.readdirSync(LOCAL_UI_CACHE_DIR);
+            for (const file of files) {
+              fs.unlinkSync(path.join(LOCAL_UI_CACHE_DIR, file));
+            }
+          } catch (error) {
+            console.warn('Warning: Could not empty cache directory:', error.message);
           }
         }
       } else {
         // Delete entire cache directory
         if (LOCAL_UI_CACHE_DIR && fs.existsSync(LOCAL_UI_CACHE_DIR)) {
-          console.log('Deleting UI cache directory (OTA disabled)...');
-          fs.rmSync(LOCAL_UI_CACHE_DIR, { recursive: true, force: true });
+          try {
+            console.log('Deleting UI cache directory (OTA disabled)...');
+            fs.rmSync(LOCAL_UI_CACHE_DIR, { recursive: true, force: true });
+          } catch (error) {
+            console.warn('Warning: Could not delete cache directory:', error.message);
+          }
         }
       }
       
@@ -457,8 +465,16 @@ async function checkUIVersion() {
     
     // Ensure cache directory is initialized and exists
     await initializeCacheDir();
-    if (!fs.existsSync(LOCAL_UI_CACHE_DIR)) {
-      fs.mkdirSync(LOCAL_UI_CACHE_DIR, { recursive: true });
+    if (!LOCAL_UI_CACHE_DIR) {
+      throw new Error('Cache directory not available');
+    }
+    
+    try {
+      if (!fs.existsSync(LOCAL_UI_CACHE_DIR)) {
+        fs.mkdirSync(LOCAL_UI_CACHE_DIR, { recursive: true });
+      }
+    } catch (error) {
+      throw new Error(`Cannot create cache directory: ${error.message}`);
     }
 
     // Check current UI version
@@ -879,8 +895,9 @@ function showUpdateModal(version, releaseNotes, macLink, winLink, isCritical = f
 
 // Shared admin password validation function
 function validateAdminPassword(password) {
-  // Centralized admin password - can be easily changed here
-  return password === 'admin';
+  // Use environment variable or fallback to simple default
+  const adminPassword = process.env.LECTURE_LOGGER_ADMIN_PASSWORD || 'admin';
+  return password === adminPassword;
 }
 
 
@@ -2782,6 +2799,38 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Update settings to clear test version
     appSettings.testVersion = '';
     localStorage.setItem('lectureLoggerSettings', JSON.stringify(appSettings));
+  });
+
+  // Test Normal Update Modal
+  document.getElementById('devTestNormalUpdate').addEventListener('click', function() {
+    const testVersion = document.getElementById('devTestVersion').value.trim() || '9.9.9';
+    showUpdateModal(
+      testVersion,
+      `🎉 **Test Normal Update**\n\nThis is a test of the normal update system using version ${testVersion}.\n\n**Features in this test:**\n- Standard blue styling\n- "Maybe Later" button available\n- Normal close behavior\n- Standard "Download Update" button`,
+      'https://example.com/mac-download',
+      'https://example.com/win-download',
+      false // Critical = false
+    );
+    
+    // Close developer modal
+    const developerModal = bootstrap.Modal.getInstance(document.getElementById('developerModal'));
+    developerModal.hide();
+  });
+
+  // Test Critical Update Modal
+  document.getElementById('devTestCriticalUpdate').addEventListener('click', function() {
+    const testVersion = document.getElementById('devTestVersion').value.trim() || '9.9.9';
+    showUpdateModal(
+      testVersion,
+      `🚨 **CRITICAL SECURITY UPDATE - Test Mode**\n\nThis is a test of the critical update system using version ${testVersion}.\n\n**Features in this test:**\n- Red styling with pulsing border\n- No "Maybe Later" button\n- Admin password required to close\n- Red "Install Critical Update Now" button`,
+      'https://example.com/mac-download',
+      'https://example.com/win-download',
+      true // Critical = true
+    );
+    
+    // Close developer modal
+    const developerModal = bootstrap.Modal.getInstance(document.getElementById('developerModal'));
+    developerModal.hide();
   });
   
   document.getElementById('devGithubDebug').addEventListener('click', function() {
