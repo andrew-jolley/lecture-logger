@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 /**
  * Python File Synchronization Script
  * Ensures all Python bridge files are synchronized across all runtime directories
@@ -17,9 +16,7 @@ console.log('='.repeat(70));
 const sourceDir = '/Users/andrewjolley/lecture-logger/python';
 const targetDirs = [
     '/Users/andrewjolley/lecture-logger/python-runtime/darwin-arm64',
-    '/Users/andrewjolley/lecture-logger/python-runtime/linux-x64', 
-    '/Users/andrewjolley/lecture-logger/python-runtime/win32-x64',
-    '/Users/andrewjolley/lecture-logger/python-runtime/win32-ia32'
+    '/Users/andrewjolley/lecture-logger/python-runtime/win32-x64'
 ];
 
 const filesToSync = [

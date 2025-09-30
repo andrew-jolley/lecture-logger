@@ -60,8 +60,7 @@ function getEmbeddedPythonPath() {
   // Map Node.js arch to our naming convention
   const archMap = {
     'x64': 'x64',
-    'arm64': 'arm64',
-    'ia32': 'ia32'
+    'arm64': 'arm64'
   };
   
   const mappedArch = archMap[arch] || 'x64';
@@ -389,7 +388,7 @@ function createWindow() {
     },
     show: false, // Don't show until ready
     autoHideMenuBar: process.platform === 'win32', // Hide menu bar on Windows
-    menuBarVisible: process.platform !== 'win32' // Show menu bar only on macOS/Linux
+    menuBarVisible: process.platform !== 'win32' // Show menu bar only on macOS
   });
 
   // Don't show main window until app signals it's ready
@@ -929,7 +928,7 @@ ipcMain.handle('open-installer', async (event, filePath) => {
       
       console.log('Successfully opened Downloads folder, closing app in 2 seconds...');
     } else {
-      // On macOS/Linux, open the installer directly
+      // On macOS, open the installer directly
       const result = await shell.openPath(filePath);
       console.log('shell.openPath returned:', result);
       
@@ -1009,7 +1008,7 @@ ipcMain.handle('python-bridge', async (event, command, data = null) => {
         // On Windows, python.exe is directly in the runtime directory
         runtimeDir = path.dirname(pythonExePath);
       } else {
-        // On macOS/Linux, python3 is in bin/ subdirectory
+        // On macOS, python3 is in bin/ subdirectory
         runtimeDir = path.dirname(path.dirname(pythonExePath)); // Remove /bin/python3 to get runtime dir
       }
       

@@ -12,4 +12,4 @@ This major release introduces a revolutionary Over-The-Air (OTA) UI Update Syste
 
 The Excel integration system is now fully operational with robust Python backend processing, providing seamless lecture logging directly to Excel spreadsheets. Special thanks to Liam Shadwell for developing the comprehensive Python backend and Excel integration capabilities.
 
-Key highlights include intelligent automatic update checking on startup, smart local caching for offline reliability, subtle notification system for seamless user experience, comprehensive developer tools for advanced users, and cross-platform Python runtime with embedded distributions for Windows and intelligent system detection for macOS/Linux.
+Key highlights include intelligent automatic update checking on startup, smart local caching for offline reliability, subtle notification system for seamless user experience, comprehensive developer tools for advanced users, and cross-platform Python runtime with embedded distributions for Windows and intelligent system detection for macOS.

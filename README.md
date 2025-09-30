@@ -34,7 +34,6 @@ npm start
 npm run dist        # Build for all platforms
 npm run dist:mac    # macOS only
 npm run dist:win    # Windows only
-npm run dist:linux  # Linux only
 ```
 
 ## Project Structure
@@ -50,9 +49,7 @@ lecture-logger/
 │   └── OTJ for Python.xlsx # Sample Excel file
 ├── python-runtime/         # Embedded Python distributions
 │   ├── win32-x64/         # Windows 64-bit Python
-│   ├── win32-ia32/        # Windows 32-bit Python
-│   ├── darwin-arm64/      # macOS wrapper
-│   └── linux-x64/         # Linux wrapper
+│   └── darwin-arm64/      # macOS wrapper
 └── scripts/
     └── setup-multiplatform-python.js # Python setup script
 ```
@@ -62,9 +59,9 @@ lecture-logger/
 The app uses embedded Python distributions for reliable cross-platform Excel processing:
 
 - **Windows**: Full Python 3.13.5 embeddable distributions (~41MB)
-- **macOS/Linux**: Intelligent wrappers that find system Python (~0.1MB)
+- **macOS**: Intelligent wrapper that finds system Python (~0.1MB)
 
-This ensures Windows users (typically less technical) get a "just works" experience, while macOS/Linux users benefit from smaller download sizes with automatic system Python detection.
+This ensures Windows users (typically less technical) get a "just works" experience, while macOS users benefit from smaller download sizes with automatic system Python detection.
 
 ## Authors
 
