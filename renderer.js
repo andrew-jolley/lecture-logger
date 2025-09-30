@@ -1,7 +1,7 @@
 // ===== UI VERSION IDENTIFIER =====
 // This constant identifies the version of this UI file
 // It should be updated whenever this file is modified for OTA updates
-const THIS_UI_VERSION = '2.0.1';
+const THIS_UI_VERSION = '2.0.2';
 // ===================================
 
 // Excel processing handled by Python backend via electron_bridge.py
@@ -28,6 +28,13 @@ const currentVersion = packageJson.version;
 
 // Release notes
 const releaseNotes = {
+    "2.8.1": {
+        title: "Minor Bug Fixes & Improvements",
+        notes: [
+          "🐛 Fixed issue with Excel file not saving correctly",
+          "🔧 Improved error handling for file operations"
+        ]
+    },
     "2.5.3": {
         title: "Revolutionary UI OTA Update System & Enhanced User Experience",
         notes: [
