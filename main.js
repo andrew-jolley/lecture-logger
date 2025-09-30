@@ -229,7 +229,9 @@ function createSplashWindow() {
     icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      nativeWindowOpen: false,
+      allowRunningInsecureContent: false
     },
     show: false,
     roundedCorners: true
@@ -383,8 +385,10 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      enableRemoteModule: true,
-      webSecurity: false // This helps with built apps
+      // Note: These security settings are needed for legacy renderer code
+      // TODO: Refactor to use IPC channels instead of direct Node.js access
+      nativeWindowOpen: false,
+      allowRunningInsecureContent: false
     },
     show: false, // Don't show until ready
     autoHideMenuBar: process.platform === 'win32', // Hide menu bar on Windows

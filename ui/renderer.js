@@ -891,8 +891,9 @@ function showUpdateModal(version, releaseNotes, macLink, winLink, isCritical = f
 
 // Shared admin password validation function
 function validateAdminPassword(password) {
-  // Centralized admin password - can be easily changed here
-  return password === 'admin';
+  // Use environment variable or fallback to simple default
+  const adminPassword = process.env.LECTURE_LOGGER_ADMIN_PASSWORD || 'admin';
+  return password === adminPassword;
 }
 
 
