@@ -1,7 +1,7 @@
 {
   "name": "lecture-logger",
-  "version": "2.8.1",
-  "buildNumber": "20250930.056",
+  "version": "2.8.2",
+  "buildNumber": "20251001.015",
   "uiVersion": "2.0.2",
   "description": "An app to log lectures into an Excel spreadsheet",
   "author": "Andrew Jolley <andrew@jolley.dev> (UI/Frontend), Liam Shadwell (Python Backend)",
@@ -24,9 +24,11 @@
     "exceljs": "^4.4.0"
   },
   "devDependencies": {
-    "dmg-license": "^1.0.11",
     "electron": "^38.2.0",
     "electron-builder": "^24.13.3"
+  },
+  "optionalDependencies": {
+    "dmg-license": "^1.0.11"
   },
   "build": {
     "appId": "com.andrewjolley.lecturelogger",
@@ -69,13 +71,14 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": false,
       "allowElevation": false,
       "perMachine": false,
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": true,
       "menuCategory": false,
+      "differentialPackage": false,
       "artifactName": "${productName}-${version}-x64.exe",
       "uninstallDisplayName": "${productName}",
       "include": "installer-script.nsh",
@@ -87,8 +90,10 @@
         "en_US"
       ],
       "packElevateHelper": false,
+      "multiLanguageInstaller": false,
       "guid": "a8b7bd78-cfea-5f1f-95a5-6a1b0730475d",
-      "removeDefaultUninstallWelcomePage": false
+      "removeDefaultUninstallWelcomePage": false,
+      "script": "installer-script.nsh"
     },
     "mac": {
       "icon": "lec_log_mac.icns",

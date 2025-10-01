@@ -2322,8 +2322,33 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
   
   // Initial setup file browser functionality
-  document.getElementById('initialBrowseFileBtn').addEventListener('click', function() {
-    document.getElementById('initialFileInput').click();
+  document.getElementById('initialBrowseFileBtn').addEventListener('click', async function() {
+    try {
+      const result = await ipcRenderer.invoke('show-excel-file-dialog');
+      
+      if (result.success && !result.canceled) {
+        // Simulate the file selection for the existing handler
+        const errorDiv = document.getElementById('initialFilePathError');
+        const pathInput = document.getElementById('initialExcelPath');
+        
+        // Set the full file path
+        pathInput.value = result.filePath;
+        errorDiv.style.display = 'none';
+        pathInput.classList.remove('is-invalid');
+        pathInput.classList.add('is-valid');
+        
+        // Update temporary app settings to ensure file path is available immediately
+        appSettings.excelPath = result.filePath;
+        
+        logBasic('info', 'Initial setup Excel file selected via native dialog', { 
+          fileName: result.fileName, 
+          path: result.filePath 
+        });
+      }
+    } catch (error) {
+      console.error('Error opening file dialog:', error);
+      alert('❌ Error opening file dialog. Please try again.');
+    }
   });
   
   // Initial setup file input change handler
@@ -2368,8 +2393,39 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
   
   // Settings file browser functionality
-  document.getElementById('browseFileBtn').addEventListener('click', function() {
-    document.getElementById('fileInput').click();
+  document.getElementById('browseFileBtn').addEventListener('click', async function() {
+    try {
+      const result = await ipcRenderer.invoke('show-excel-file-dialog');
+      
+      if (result.success && !result.canceled) {
+        // Handle the file selection
+        const errorDiv = document.getElementById('filePathError');
+        const pathInput = document.getElementById('excelPath');
+        
+        // Clear any previous errors
+        errorDiv.style.display = 'none';
+        pathInput.classList.remove('is-invalid');
+        pathInput.classList.add('is-valid');
+        
+        // Set the file path - use full path from native dialog
+        pathInput.value = result.filePath;
+        
+        // Immediately update settings to ensure file path is available for Python debug
+        appSettings.excelPath = result.filePath;
+        localStorage.setItem('lectureLoggerSettings', JSON.stringify(appSettings));
+        
+        // Also sync to Python bridge immediately
+        savePythonSettings();
+        
+        logBasic('info', 'Valid Excel file selected via native dialog and settings updated', { 
+          fileName: result.fileName, 
+          path: result.filePath 
+        });
+      }
+    } catch (error) {
+      console.error('Error opening file dialog:', error);
+      alert('❌ Error opening file dialog. Please try again.');
+    }
   });
   
   // Settings file input change handler
