@@ -291,7 +291,7 @@ def addType():   #adding activity type to the rowData list
         for i in range (len(options)):     #define the indexes of the options
             print(f"{i+1} - {options[i]}")    #and print
             
-        selected = int(input("\nEnter the chosen location here >>     "))   #get the users selection
+        selected = int(input("\nEnter the chosen activity here >>     "))   #get the users selection
         
         if selected > len(options)-1 or selected == 0:          #validate input, if invalid, then go to start of function
             print("Sorry, that option is not valid. Please try again...\n")
