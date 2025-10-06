@@ -1,7 +1,7 @@
 // ===== UI VERSION IDENTIFIER =====
 // This constant identifies the version of this UI file
 // It should be updated whenever this file is modified for OTA updates
-const THIS_UI_VERSION = '2.0.1';
+const THIS_UI_VERSION = '2.0.2';
 // ===================================
 
 // Excel processing handled by Python backend via electron_bridge.py
@@ -28,6 +28,13 @@ const currentVersion = packageJson.version;
 
 // Release notes
 const releaseNotes = {
+    "2.8.1": {
+        title: "Minor Bug Fixes & Improvements",
+        notes: [
+          "🐛 Fixed issue with Excel file not saving correctly",
+          "🔧 Improved error handling for file operations"
+        ]
+    },
     "2.5.3": {
         title: "Revolutionary UI OTA Update System & Enhanced User Experience",
         notes: [
@@ -2317,32 +2324,30 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Initial setup file browser functionality
   document.getElementById('initialBrowseFileBtn').addEventListener('click', async function() {
     try {
-      const result = await window.electronAPI.showFileDialog();
-      if (result.filePath) {
-        const pathInput = document.getElementById('initialExcelPath');
+      const result = await ipcRenderer.invoke('show-excel-file-dialog');
+      
+      if (result.success && !result.canceled) {
+        // Simulate the file selection for the existing handler
         const errorDiv = document.getElementById('initialFilePathError');
+        const pathInput = document.getElementById('initialExcelPath');
         
-        // Validate that it's an .xlsx file
-        if (!result.filePath.toLowerCase().endsWith('.xlsx')) {
-          alert('❌ Invalid File Type\n\nOnly Excel (.xlsx) files are supported. Please select a valid Excel file.');
-          return;
-        }
-        
-        // Set the full path
+        // Set the full file path
         pathInput.value = result.filePath;
         errorDiv.style.display = 'none';
         pathInput.classList.remove('is-invalid');
         pathInput.classList.add('is-valid');
         
-        // Update temporary app settings
+        // Update temporary app settings to ensure file path is available immediately
         appSettings.excelPath = result.filePath;
         
-        logBasic('info', 'Initial setup Excel file selected via native dialog', { filePath: result.filePath });
+        logBasic('info', 'Initial setup Excel file selected via native dialog', { 
+          fileName: result.fileName, 
+          path: result.filePath 
+        });
       }
     } catch (error) {
-      console.error('File dialog error:', error);
-      // Fallback to HTML file input
-      document.getElementById('initialFileInput').click();
+      console.error('Error opening file dialog:', error);
+      alert('❌ Error opening file dialog. Please try again.');
     }
   });
   

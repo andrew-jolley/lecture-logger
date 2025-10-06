@@ -60,7 +60,8 @@
       }
     ],
     "asarUnpack": [
-      "python-runtime/**/*"
+      "python-runtime/**/*",
+      "assets/**/*"
     ],
     "compression": "maximum",
     "removePackageScripts": true,

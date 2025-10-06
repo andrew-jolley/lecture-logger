@@ -994,6 +994,29 @@ ipcMain.handle('get-ui-source', async () => {
   return shouldUseCachedUI() ? 'cached' : 'bundled';
 });
 
+// IPC handler to show native file dialog for Excel files
+ipcMain.handle('show-excel-file-dialog', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select Excel File',
+    filters: [
+      { name: 'Excel Files', extensions: ['xlsx'] },
+      { name: 'All Files', extensions: ['*'] }
+    ],
+    properties: ['openFile']
+  });
+  
+  if (result.canceled) {
+    return { success: false, canceled: true };
+  }
+  
+  const filePath = result.filePaths[0];
+  return { 
+    success: true, 
+    filePath: filePath,
+    fileName: path.basename(filePath)
+  };
+});
+
 // Python Integration Handlers
 const { spawn } = require('child_process');
 
