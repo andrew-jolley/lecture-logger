@@ -1168,6 +1168,24 @@ Arch: ${os.arch()}
   });
 });
 
+// IPC handler for file dialog
+ipcMain.handle('show-file-dialog', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select Excel File',
+    filters: [
+      { name: 'Excel Files', extensions: ['xlsx'] },
+      { name: 'All Files', extensions: ['*'] }
+    ],
+    properties: ['openFile']
+  });
+  
+  if (!result.canceled && result.filePaths.length > 0) {
+    return { filePath: result.filePaths[0] };
+  }
+  
+  return { filePath: null };
+});
+
 // IPC handler to save settings for Python bridge
 ipcMain.handle('save-python-settings', async (event, settings) => {
   try {

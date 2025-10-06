@@ -2315,8 +2315,35 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
   
   // Initial setup file browser functionality
-  document.getElementById('initialBrowseFileBtn').addEventListener('click', function() {
-    document.getElementById('initialFileInput').click();
+  document.getElementById('initialBrowseFileBtn').addEventListener('click', async function() {
+    try {
+      const result = await window.electronAPI.showFileDialog();
+      if (result.filePath) {
+        const pathInput = document.getElementById('initialExcelPath');
+        const errorDiv = document.getElementById('initialFilePathError');
+        
+        // Validate that it's an .xlsx file
+        if (!result.filePath.toLowerCase().endsWith('.xlsx')) {
+          alert('❌ Invalid File Type\n\nOnly Excel (.xlsx) files are supported. Please select a valid Excel file.');
+          return;
+        }
+        
+        // Set the full path
+        pathInput.value = result.filePath;
+        errorDiv.style.display = 'none';
+        pathInput.classList.remove('is-invalid');
+        pathInput.classList.add('is-valid');
+        
+        // Update temporary app settings
+        appSettings.excelPath = result.filePath;
+        
+        logBasic('info', 'Initial setup Excel file selected via native dialog', { filePath: result.filePath });
+      }
+    } catch (error) {
+      console.error('File dialog error:', error);
+      // Fallback to HTML file input
+      document.getElementById('initialFileInput').click();
+    }
   });
   
   // Initial setup file input change handler
@@ -2361,8 +2388,39 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
   
   // Settings file browser functionality
-  document.getElementById('browseFileBtn').addEventListener('click', function() {
-    document.getElementById('fileInput').click();
+  document.getElementById('browseFileBtn').addEventListener('click', async function() {
+    try {
+      const result = await ipcRenderer.invoke('show-file-dialog');
+      if (result.filePath) {
+        const pathInput = document.getElementById('excelPath');
+        const errorDiv = document.getElementById('filePathError');
+        
+        // Validate that it's an .xlsx file
+        if (!result.filePath.toLowerCase().endsWith('.xlsx')) {
+          alert('❌ Invalid File Type\\n\\nOnly Excel (.xlsx) files are supported. Please select a valid Excel file.');
+          return;
+        }
+        
+        // Set the full path
+        pathInput.value = result.filePath;
+        errorDiv.style.display = 'none';
+        pathInput.classList.remove('is-invalid');
+        pathInput.classList.add('is-valid');
+        
+        // Update settings immediately
+        appSettings.excelPath = result.filePath;
+        localStorage.setItem('lectureLoggerSettings', JSON.stringify(appSettings));
+        
+        // Sync to Python bridge immediately  
+        savePythonSettings();
+        
+        logBasic('info', 'Settings Excel file selected via native dialog', { filePath: result.filePath });
+      }
+    } catch (error) {
+      console.error('File dialog error:', error);
+      // Fallback to HTML file input
+      document.getElementById('fileInput').click();
+    }
   });
   
   // Settings file input change handler

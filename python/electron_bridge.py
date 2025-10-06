@@ -226,16 +226,11 @@ def load_settings_from_electron():
     cwd = os.getcwd()
     
     # Possible paths where settings might be located
-    # Try user's development location first to preserve existing settings
-    dev_project_path = "/Users/andrewjolley/lecture-logger/python"
-    
     possible_paths = [
-        # User's existing development settings (highest priority)
-        dev_project_path,
-        # Current development: main python directory
-        os.path.join(cwd, 'python'),
         # Development: script directory if running from python/
         script_dir,
+        # Current development: main python directory
+        os.path.join(cwd, 'python'),
         # Built app: relative to working directory
         cwd,
         # Built app: relative to script directory

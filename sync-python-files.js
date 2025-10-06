@@ -13,10 +13,10 @@ console.log('Ensuring all Python files are up-to-date across all locations');
 console.log('='.repeat(70));
 
 // Define the source and target locations
-const sourceDir = '/Users/andrewjolley/lecture-logger/python';
+const sourceDir = path.join(__dirname, 'python');
 const targetDirs = [
-    '/Users/andrewjolley/lecture-logger/python-runtime/darwin-arm64',
-    '/Users/andrewjolley/lecture-logger/python-runtime/win32-x64'
+    path.join(__dirname, 'python-runtime/darwin-arm64'),
+    path.join(__dirname, 'python-runtime/win32-x64')
 ];
 
 const filesToSync = [
