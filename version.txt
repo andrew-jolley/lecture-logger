@@ -1,4 +1,4 @@
-Latest_Version: 2.8.1
+Latest_Version: 2.8.9
 Critical: Y
 Download_Link_Mac: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.8.0/Lecture.Logger-2.8.1-arm64.dmg
 Download_Link_Win: https://github.com/andrew-jolley/lecture-logger/releases/download/v2.8.0/Lecture.Logger-2.8.1-x64.exe
